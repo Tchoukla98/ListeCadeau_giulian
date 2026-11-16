@@ -34,32 +34,34 @@
     ⚠️ Mode Démonstration (sauvegarde locale sur cet appareil).
   </div>
 
-  <!-- HEADER -->
+  <!-- HEADER CENTRÉ SUR TOUTE LA LARGEUR DU CADRE -->
   <header class="max-w-5xl mx-auto px-4 pt-6 pb-4">
-    <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-5 sm:p-7 border border-white/60">
-      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <span id="connectionBadge" class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800 mb-2">
-            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Connexion...
-          </span>
-          <h1 id="mainTitle" class="text-2xl sm:text-4xl font-black tracking-tight text-slate-900">
-            🎅 Liste de Noël
-          </h1>
-          <p id="mainSubtitle" class="text-slate-500 text-sm sm:text-base mt-1">
-            Choisissez un cadeau pour éviter les doublons — modifiable à tout moment !
-          </p>
-        </div>
+    <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-5 sm:p-7 border border-white/60 text-center">
 
-        <!-- BOUTON ACCÈS PARENTS -->
-        <div class="flex flex-wrap items-center gap-2">
-          <button id="parentModeBtn" onclick="handleParentAuth()" class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white transition flex items-center gap-1.5 shadow-sm">
-            🔒 <span id="parentBtnLabel">Mode Parents</span>
-          </button>
-        </div>
+      <!-- Badge de connexion centré -->
+      <div class="flex justify-center mb-2">
+        <span id="connectionBadge" class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Connexion...
+        </span>
+      </div>
+
+      <!-- Titre et sous-titre centrés -->
+      <h1 id="mainTitle" class="text-2xl sm:text-4xl font-black tracking-tight text-slate-900">
+        🎅 Liste de Noël
+      </h1>
+      <p id="mainSubtitle" class="text-slate-500 text-sm sm:text-base mt-1">
+        Choisissez un cadeau pour éviter les doublons — modifiable à tout moment !
+      </p>
+
+      <!-- Bouton Mode Parents sur toute la largeur et centré -->
+      <div class="mt-4">
+        <button id="parentModeBtn" onclick="handleParentAuth()" class="w-full py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm">
+          🔒 <span id="parentBtnLabel">Mode Parents</span>
+        </button>
       </div>
 
       <!-- SÉLECTEUR DES 2 LISTES (ONGLETS) -->
-      <div class="grid grid-cols-2 gap-3 mt-6 bg-slate-100/90 p-1.5 rounded-2xl">
+      <div class="grid grid-cols-2 gap-3 mt-5 bg-slate-100/90 p-1.5 rounded-2xl">
         <button id="tab-christmas" onclick="switchList('christmas')" class="py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-red-600 text-white shadow-md">
           <span>🎅</span>
           <span>Liste de Noël</span>
@@ -73,7 +75,7 @@
       </div>
 
       <!-- BARRE DE PROGRESSION & FILTRES -->
-      <div class="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div class="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-left">
         <div class="flex-1">
           <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
             <span id="progressText">0 réservé sur 0 cadeaux</span>
@@ -84,12 +86,13 @@
           </div>
         </div>
 
-        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+        <div class="flex items-center justify-center gap-1.5 bg-slate-100 p-1 rounded-xl self-center sm:self-auto">
           <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm">Tous</button>
           <button onclick="setFilter('available')" id="filter-available" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">Disponibles</button>
           <button onclick="setFilter('reserved')" id="filter-reserved" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">Réservés</button>
         </div>
       </div>
+
     </div>
   </header>
 
@@ -265,9 +268,8 @@
       appId: "1:897843250691:web:8201131d24b467d6583036"
     };
 
-    // Empreinte SHA-256 du code PIN Parents
-     const PARENT_PIN_HASH = "ed3be371d0ac2105d526dd0f1455629a731bd60c867e55d8bb851ded582f4d9f";
-
+    // Empreinte SHA-256 du code PIN Parents (24080912)
+    const PARENT_PIN_HASH = "ed3be371d0ac2105d526dd0f1455629a731bd60c867e55d8bb851ded582f4d9f";
 
     // =========================================================================
     // ÉTAT GLOBAL
@@ -275,7 +277,7 @@
     let currentList = "christmas"; // "christmas" | "birthday"
     let currentFilter = "all";     // "all" | "available" | "reserved"
     let isParentMode = false;
-    let hideNames = true;          // Masqué par défaut !
+    let hideNames = true;          // Masqué par défaut
     let gifts = [];
     let useFirebase = false;
     let db = null;
@@ -332,7 +334,7 @@
 
         document.getElementById("demoBanner").classList.add("hidden");
         const badge = document.getElementById("connectionBadge");
-        badge.className = "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 mb-2";
+        badge.className = "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800";
         badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Synchronisé en direct`;
 
         onSnapshot(collection(db, "gifts"), (snapshot) => {
@@ -603,7 +605,7 @@
     };
 
     // =========================================================================
-    // SHA-256 AUTONOME (FONCTIONNE PARTOUT SANS RESTRICTION HTTPS/LOCAL)
+    // SHA-256 AUTONOME
     // =========================================================================
     function sha256Pure(ascii) {
       function rightRotate(value, amount) {
@@ -675,7 +677,7 @@
     window.handleParentAuth = function() {
       if (isParentMode) {
         isParentMode = false;
-        hideNames = true; // Remasque automatiquement les prénoms en quittant le mode Parents
+        hideNames = true;
         updateNamesButtonLabel();
         document.getElementById("parentPanel").classList.add("hidden");
         document.getElementById("parentBtnLabel").textContent = "Mode Parents";
