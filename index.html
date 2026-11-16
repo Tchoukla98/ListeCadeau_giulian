@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Listes de Cadeaux — Anniversaire & Noël</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Nunito', sans-serif;
+      transition: background-color 0.4s ease;
+    }
+    .theme-birthday {
+      background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 50%, #fde68a 100%);
+    }
+    .theme-christmas {
+      background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 45%, #dcfce7 100%);
+    }
+    .card-hover {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card-hover:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.12);
+    }
+  </style>
+</head>
+<body class="theme-christmas min-h-screen text-slate-800 pb-16">
+
+  <!-- BANNIÈRE MODE DÉMO (disparaît automatiquement dès que Firebase est configuré) -->
+  <div id="demoBanner" class="bg-amber-600 text-white text-xs sm:text-sm py-2 px-4 text-center font-semibold shadow-sm">
+    ⚠️ Mode Démonstration (sauvegarde locale sur cet appareil). Pour synchroniser toute la famille en temps réel, renseignez votre <code>firebaseConfig</code> dans le fichier HTML.
+  </div>
+
+  <!-- HEADER -->
+  <header class="max-w-5xl mx-auto px-4 pt-6 pb-4">
+    <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-5 sm:p-7 border border-white/60">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <span id="connectionBadge" class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800 mb-2">
+            <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Stockage local (Démo)
+          </span>
+          <h1 id="mainTitle" class="text-2xl sm:text-4xl font-black tracking-tight text-slate-900">
+            🎅 Liste de Noël
+          </h1>
+          <p id="mainSubtitle" class="text-slate-500 text-sm sm:text-base mt-1">
+            Choisissez un cadeau pour éviter les doublons — modifiable à tout moment !
+          </p>
+        </div>
+
+        <!-- BOUTONS PARENTS / CONFIDENTIALITÉ -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="toggleNamesBtn" onclick="toggleHideNames()" class="text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5" title="Masquer ou afficher qui a réservé quoi">
+            👁️ <span id="toggleNamesLabel">Masquer les prénoms</span>
+          </button>
+          <button id="parentModeBtn" onclick="handleParentAuth()" class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white transition flex items-center gap-1.5 shadow-sm">
+            🔒 <span id="parentBtnLabel">Mode Parents</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- SÉLECTEUR DES 2 LISTES (ONGLETS) -->
+      <div class="grid grid-cols-2 gap-3 mt-6 bg-slate-100/90 p-1.5 rounded-2xl">
+        <button id="tab-christmas" onclick="switchList('christmas')" class="py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-red-600 text-white shadow-md">
+          <span>🎅</span>
+          <span>Liste de Noël</span>
+          <span id="count-christmas" class="ml-1 text-xs px-2 py-0.5 rounded-full bg-white/25">0</span>
+        </button>
+        <button id="tab-birthday" onclick="switchList('birthday')" class="py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-white/60">
+          <span>🎂</span>
+          <span>Anniversaire</span>
+          <span id="count-birthday" class="ml-1 text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-700">0</span>
+        </button>
+      </div>
+
+      <!-- BARRE DE PROGRESSION & FILTRES -->
+      <div class="mt-5 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div class="flex-1">
+          <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+            <span id="progressText">0 réservé sur 0 cadeaux</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+            <div id="progressBar" class="h-full bg-emerald-500 transition-all duration-500 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+          <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm">Tous</button>
+          <button onclick="setFilter('available')" id="filter-available" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">Disponibles</button>
+          <button onclick="setFilter('reserved')" id="filter-reserved" class="filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900">Réservés</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- PANNEAU AJOUT PARENTS (masqué par défaut) -->
+  <section id="parentPanel" class="hidden max-w-5xl mx-auto px-4 mb-6">
+    <div class="bg-white rounded-3xl shadow-md p-5 sm:p-6 border-2 border-indigo-200">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-extrabold text-indigo-950 flex items-center gap-2">
+          ✨ Ajouter un jouet à la liste (<span id="parentTargetListName">Noël</span>)
+        </h2>
+        <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">Mode Parents actif</span>
+      </div>
+      <form id="addGiftForm" onsubmit="handleAddGift(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <div class="sm:col-span-4">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Nom du jouet / cadeau *</label>
+          <input type="text" id="giftTitle" required placeholder="Ex: Train en bois Brio" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Prix approx.</label>
+          <input type="text" id="giftPrice" placeholder="Ex: 35 €" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
+        </div>
+        <div class="sm:col-span-3">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Lien boutique (optionnel)</label>
+          <input type="url" id="giftUrl" placeholder="https://..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
+        </div>
+        <div class="sm:col-span-3">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Image URL (optionnel)</label>
+          <input type="url" id="giftImage" placeholder="https://.../image.jpg" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
+        </div>
+        <div class="sm:col-span-9">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Précisions (taille, couleur, magasin...)</label>
+          <input type="text" id="giftNote" placeholder="Ex: Taille 4 ans ou coloris bleu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
+        </div>
+        <div class="sm:col-span-3 flex items-end">
+          <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-sm transition">
+            + Ajouter à la liste
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- GRILLE DES CADEAUX -->
+  <main class="max-w-5xl mx-auto px-4">
+    <div id="giftsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+      <!-- Cartes injectées en JS -->
+    </div>
+    <div id="emptyState" class="hidden text-center py-16 bg-white/80 rounded-3xl shadow-sm">
+      <p class="text-4xl mb-3">🎁</p>
+      <p class="text-lg font-extrabold text-slate-700">Aucun cadeau dans cette vue</p>
+      <p class="text-sm text-slate-500 mt-1">Changez de filtre ou activez le Mode Parents pour ajouter des idées !</p>
+    </div>
+  </main>
+
+  <!-- MODALE RÉSERVATION / MODIFICATION PAR LA FAMILLE -->
+  <div id="reserveModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-emerald-600">Réservation cadeau</span>
+          <h3 id="modalGiftTitle" class="text-xl font-black text-slate-900 mt-0.5">Nom du cadeau</h3>
+        </div>
+        <button onclick="closeReserveModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      </div>
+
+      <form onsubmit="submitReservation(event)" class="space-y-4">
+        <input type="hidden" id="modalGiftId" />
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Votre prénom (ou surnom) *</label>
+          <input type="text" id="reserverName" required placeholder="Ex: Mamie, Tonton Lucas, Marraine..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm font-semibold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Petit message (optionnel)</label>
+          <input type="text" id="reserverComment" placeholder="Ex: Commandé ! / Participation à plusieurs" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm" />
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-2 pt-2">
+          <button type="submit" class="flex-1 py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-sm shadow-sm transition">
+            ✅ Valider mon choix
+          </button>
+          <button type="button" id="cancelReservationBtn" onclick="releaseGift()" class="hidden py-3 px-4 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-700 font-extrabold text-sm transition">
+            🗑️ Libérer ce cadeau
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODALE CODE PIN PARENTS -->
+  <div id="pinModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center">
+      <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-3">🔐</div>
+      <h3 class="text-lg font-black text-slate-900">Accès Parents</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-4">Entrez le code PIN pour ajouter ou supprimer des cadeaux.</p>
+      <form onsubmit="verifyPin(event)" class="space-y-3">
+        <input type="password" id="pinInput" inputmode="numeric" maxlength="12" required placeholder="••••••••" class="w-full text-center tracking-widest text-xl font-black px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 outline-none" />
+        <p id="pinError" class="hidden text-xs font-bold text-rose-600">Code incorrect</p>
+        <div class="flex gap-2">
+          <button type="button" onclick="closePinModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">Annuler</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm">Déverrouiller</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODALE ÉDITION PARENTS -->
+  <div id="editModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-black text-slate-900">✏️ Modifier le cadeau</h3>
+        <button onclick="closeEditModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
+      </div>
+      <form onsubmit="submitEditGift(event)" class="space-y-3">
+        <input type="hidden" id="editGiftId" />
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Nom *</label>
+          <input type="text" id="editTitle" required class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Liste</label>
+            <select id="editList" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm bg-white">
+              <option value="christmas">🎅 Noël</option>
+              <option value="birthday">🎂 Anniversaire</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-600 mb-1">Prix approx.</label>
+            <input type="text" id="editPrice" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Lien boutique</label>
+          <input type="url" id="editUrl" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Image URL</label>
+          <input type="url" id="editImage" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 mb-1">Précisions</label>
+          <input type="text" id="editNote" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+        </div>
+        <div class="flex gap-2 pt-2">
+          <button type="button" onclick="closeEditModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Annuler</button>
+          <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SCRIPT FIREBASE + LOGIQUE APPLICATIVE -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // =========================================================================
+    // 1. CONFIGURATION FIREBASE (À REMPLACER PAR VOS CLÉS FIREBASE)
+    // =========================================================================
+    const firebaseConfig = {
+      apiKey: "REMPLACER_PAR_VOTRE_API_KEY",
+      authDomain: "votre-projet.firebaseapp.com",
+      projectId: "votre-projet",
+      storageBucket: "votre-projet.appspot.com",
+      messagingSenderId: "000000000000",
+      appId: "1:000000000000:web:000000000000"
+    };
+
+    // Code PIN administrateur (Parents) — vérifié par empreinte SHA-256
+    const PARENT_PIN_HASH = "e0f3d79e33d877f809a1e38f9f5656bf2b1846df8a377f516c493b7cb6e1c4a9";
+
+    // =========================================================================
+    // ÉTAT GLOBAL
+    // =========================================================================
+    let currentList = "christmas"; // "christmas" | "birthday"
+    let currentFilter = "all";     // "all" | "available" | "reserved"
+    let isParentMode = false;
+    let hideNames = false;
+    let gifts = [];
+    let useFirebase = false;
+    let db = null;
+
+    const isFirebaseConfigured =
+      firebaseConfig.apiKey &&
+      !firebaseConfig.apiKey.startsWith("REMPLACER");
+
+    // Données d'exemple si mode démo local
+    const DEMO_STORAGE_KEY = "family_wishlists_v1";
+    const defaultDemoGifts = [
+      {
+        id: "demo-1",
+        list: "christmas",
+        title: "Circuit de train en bois (80 pièces)",
+        price: "45 €",
+        url: "https://www.google.com/search?q=circuit+train+bois",
+        image: "",
+        note: "Compatible avec les rails Brio et Ikea",
+        reservedBy: "Mamie & Papi",
+        comment: "On s'en occupe avec joie !"
+      },
+      {
+        id: "demo-2",
+        list: "christmas",
+        title: "Cuisinière en bois avec accessoires",
+        price: "79 €",
+        url: "https://www.google.com/search?q=cuisiniere+bois+enfant",
+        image: "",
+        note: "Idéalement couleur bois naturel / blanc",
+        reservedBy: "",
+        comment: ""
+      },
+      {
+        id: "demo-3",
+        list: "christmas",
+        title: "Collection de livres « Petit Ours Brun »",
+        price: "20 €",
+        url: "",
+        image: "",
+        note: "N'importe quels tomes pour l'histoire du soir",
+        reservedBy: "",
+        comment: ""
+      },
+      {
+        id: "demo-4",
+        list: "birthday",
+        title: "Draisienne évolutive légère",
+        price: "65 €",
+        url: "https://www.google.com/search?q=draisienne+legere+enfant",
+        image: "",
+        note: "Avec selle réglable dès 2 ans",
+        reservedBy: "Tonton Lucas",
+        comment: "Avec un petit casque assorti"
+      },
+      {
+        id: "demo-5",
+        list: "birthday",
+        title: "Boîte de Duplo « Les animaux de la ferme »",
+        price: "30 €",
+        url: "",
+        image: "",
+        note: "",
+        reservedBy: "",
+        comment: ""
+      }
+    ];
+
+    // =========================================================================
+    // INITIALISATION DONNÉES (FIREBASE OU LOCALSTORAGE)
+    // =========================================================================
+    if (isFirebaseConfigured) {
+      try {
+        const app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        useFirebase = true;
+
+        document.getElementById("demoBanner").classList.add("hidden");
+        const badge = document.getElementById("connectionBadge");
+        badge.className = "inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 mb-2";
+        badge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500"></span> Synchronisé en direct`;
+
+        onSnapshot(collection(db, "gifts"), (snapshot) => {
+          gifts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+          render();
+        });
+      } catch (err) {
+        console.error("Erreur Firebase, bascule en mode local :", err);
+        initLocalMode();
+      }
+    } else {
+      initLocalMode();
+    }
+
+    function initLocalMode() {
+      useFirebase = false;
+      const saved = localStorage.getItem(DEMO_STORAGE_KEY);
+      if (saved) {
+        gifts = JSON.parse(saved);
+      } else {
+        gifts = defaultDemoGifts;
+        saveLocal();
+      }
+      render();
+    }
+
+    function saveLocal() {
+      if (!useFirebase) {
+        localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(gifts));
+        render();
+      }
+    }
+
+    // =========================================================================
+    // NAVIGATION ENTRE LES 2 LISTES & FILTRES
+    // =========================================================================
+    window.switchList = function(listName) {
+      currentList = listName;
+      const body = document.body;
+      const tabChristmas = document.getElementById("tab-christmas");
+      const tabBirthday = document.getElementById("tab-birthday");
+      const mainTitle = document.getElementById("mainTitle");
+      const targetLabel = document.getElementById("parentTargetListName");
+
+      if (listName === "christmas") {
+        body.classList.remove("theme-birthday");
+        body.classList.add("theme-christmas");
+        tabChristmas.className = "py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-red-600 text-white shadow-md";
+        tabBirthday.className = "py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-white/60";
+        mainTitle.textContent = "🎅 Liste de Noël";
+        targetLabel.textContent = "Noël";
+      } else {
+        body.classList.remove("theme-christmas");
+        body.classList.add("theme-birthday");
+        tabBirthday.className = "py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-amber-500 text-white shadow-md";
+        tabChristmas.className = "py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-white/60";
+        mainTitle.textContent = "🎂 Liste d'Anniversaire";
+        targetLabel.textContent = "Anniversaire";
+      }
+      render();
+    };
+
+    window.setFilter = function(filter) {
+      currentFilter = filter;
+      ["all", "available", "reserved"].forEach(f => {
+        const btn = document.getElementById(`filter-${f}`);
+        if (f === filter) {
+          btn.className = "filter-btn px-3 py-1.5 rounded-lg text-xs font-bold bg-white text-slate-900 shadow-sm";
+        } else {
+          btn.className = "filter-btn px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-900";
+        }
+      });
+      render();
+    };
+
+    window.toggleHideNames = function() {
+      hideNames = !hideNames;
+      document.getElementById("toggleNamesLabel").textContent = hideNames ? "Afficher les prénoms" : "Masquer les prénoms";
+      render();
+    };
+
+    // =========================================================================
+    // RENDU DES CARTES & COMPTEURS
+    // =========================================================================
+    function render() {
+      const christmasGifts = gifts.filter(g => g.list === "christmas");
+      const birthdayGifts = gifts.filter(g => g.list === "birthday");
+
+      document.getElementById("count-christmas").textContent = christmasGifts.length;
+      document.getElementById("count-birthday").textContent = birthdayGifts.length;
+
+      const listGifts = gifts.filter(g => g.list === currentList);
+      const reservedCount = listGifts.filter(g => g.reservedBy && g.reservedBy.trim() !== "").length;
+      const totalCount = listGifts.length;
+      const pct = totalCount === 0 ? 0 : Math.round((reservedCount / totalCount) * 100);
+
+      document.getElementById("progressText").textContent = `${reservedCount} réservé${reservedCount > 1 ? "s" : ""} sur ${totalCount} cadeau${totalCount > 1 ? "x" : ""}`;
+      document.getElementById("progressPercent").textContent = `${pct}%`;
+      document.getElementById("progressBar").style.width = `${pct}%`;
+
+      const filtered = listGifts.filter(g => {
+        const isReserved = Boolean(g.reservedBy && g.reservedBy.trim());
+        if (currentFilter === "available") return !isReserved;
+        if (currentFilter === "reserved") return isReserved;
+        return true;
+      });
+
+      // Trier : disponibles en premier, réservés ensuite
+      filtered.sort((a, b) => {
+        const aRes = Boolean(a.reservedBy && a.reservedBy.trim());
+        const bRes = Boolean(b.reservedBy && b.reservedBy.trim());
+        return aRes - bRes;
+      });
+
+      const grid = document.getElementById("giftsGrid");
+      const emptyState = document.getElementById("emptyState");
+
+      if (filtered.length === 0) {
+        grid.innerHTML = "";
+        emptyState.classList.remove("hidden");
+        return;
+      }
+
+      emptyState.classList.add("hidden");
+      grid.innerHTML = filtered.map(gift => {
+        const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim());
+        const displayName = hideNames ? "un proche 🤫" : escapeHtml(gift.reservedBy);
+        const placeholderEmoji = currentList === "christmas" ? "🎄" : "🎈";
+
+        return `
+          <article class="card-hover bg-white rounded-3xl shadow-sm border ${isReserved ? "border-emerald-200 bg-emerald-50/30" : "border-slate-100"} overflow-hidden flex flex-col justify-between">
+            <div>
+              <!-- Image ou bandeau visuel -->
+              <div class="relative h-40 bg-slate-100 flex items-center justify-center overflow-hidden">
+                ${gift.image
+                  ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover ${isReserved ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                     <div class="hidden w-full h-full items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">${placeholderEmoji}</div>`
+                  : `<div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br ${currentList === "christmas" ? "from-red-50 to-emerald-50" : "from-amber-50 to-orange-100"}">${placeholderEmoji}</div>`
+                }
+
+                <!-- Badge Statut -->
+                <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${isReserved ? "bg-emerald-600 text-white" : "bg-white/95 text-slate-800"}">
+                  ${isReserved ? "✅ Réservé" : "✨ Disponible"}
+                </span>
+
+                <!-- Badge Prix -->
+                ${gift.price ? `<span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-extrabold bg-slate-900/80 text-white backdrop-blur-sm">${escapeHtml(gift.price)}</span>` : ""}
+              </div>
+
+              <!-- Contenu -->
+              <div class="p-5">
+                <h3 class="font-extrabold text-lg text-slate-900 leading-snug ${isReserved ? "line-through decoration-emerald-500/60 text-slate-600" : ""}">
+                  ${escapeHtml(gift.title)}
+                </h3>
+
+                ${gift.note ? `<p class="text-xs sm:text-sm text-slate-500 mt-2 leading-relaxed">${escapeHtml(gift.note)}</p>` : ""}
+
+                ${gift.url ? `
+                  <a href="${escapeHtml(gift.url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-xs font-bold text-indigo-600 hover:text-indigo-800 mt-3">
+                    🔗 Voir l'idée en boutique ↗
+                  </a>
+                ` : ""}
+
+                ${isReserved ? `
+                  <div class="mt-4 p-3 rounded-2xl bg-emerald-100/70 border border-emerald-200 text-xs text-emerald-950">
+                    <p class="font-extrabold">🎁 Pris par : ${displayName}</p>
+                    ${gift.comment && !hideNames ? `<p class="mt-1 italic text-emerald-800">« ${escapeHtml(gift.comment)} »</p>` : ""}
+                  </div>
+                ` : ""}
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="px-5 pb-5 pt-2 flex flex-col gap-2">
+              ${isReserved
+                ? `<button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition">
+                     ✏️ Modifier / Libérer ce choix
+                   </button>`
+                : `<button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl ${currentList === "christmas" ? "bg-red-600 hover:bg-red-700" : "bg-amber-500 hover:bg-amber-600"} text-white font-extrabold text-xs sm:text-sm shadow-sm transition">
+                     🙋‍♂️ Je le prends !
+                   </button>`
+              }
+
+              ${isParentMode ? `
+                <div class="flex gap-2 pt-1 border-t border-slate-100">
+                  <button onclick="openEditModal('${gift.id}')" class="flex-1 py-1.5 px-3 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs">
+                    Modifier
+                  </button>
+                  <button onclick="deleteGift('${gift.id}')" class="flex-1 py-1.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold text-xs">
+                    Supprimer
+                  </button>
+                </div>
+              ` : ""}
+            </div>
+          </article>
+        `;
+      }).join("");
+    }
+
+    // =========================================================================
+    // RÉSERVATION / MODIFICATION PAR LA FAMILLE
+    // =========================================================================
+    window.openReserveModal = function(giftId) {
+      const gift = gifts.find(g => g.id === giftId);
+      if (!gift) return;
+
+      document.getElementById("modalGiftId").value = gift.id;
+      document.getElementById("modalGiftTitle").textContent = gift.title;
+
+      const savedUser = localStorage.getItem("family_member_name") || "";
+      document.getElementById("reserverName").value = gift.reservedBy || savedUser;
+      document.getElementById("reserverComment").value = gift.comment || "";
+
+      const cancelBtn = document.getElementById("cancelReservationBtn");
+      if (gift.reservedBy && gift.reservedBy.trim() !== "") {
+        cancelBtn.classList.remove("hidden");
+      } else {
+        cancelBtn.classList.add("hidden");
+      }
+
+      document.getElementById("reserveModal").classList.remove("hidden");
+    };
+
+    window.closeReserveModal = function() {
+      document.getElementById("reserveModal").classList.add("hidden");
+    };
+
+    window.submitReservation = async function(e) {
+      e.preventDefault();
+      const id = document.getElementById("modalGiftId").value;
+      const name = document.getElementById("reserverName").value.trim();
+      const comment = document.getElementById("reserverComment").value.trim();
+      if (!name) return;
+
+      localStorage.setItem("family_member_name", name);
+
+      if (useFirebase) {
+        await updateDoc(doc(db, "gifts", id), { reservedBy: name, comment });
+      } else {
+        const idx = gifts.findIndex(g => g.id === id);
+        if (idx !== -1) {
+          gifts[idx].reservedBy = name;
+          gifts[idx].comment = comment;
+          saveLocal();
+        }
+      }
+      closeReserveModal();
+    };
+
+    window.releaseGift = async function() {
+      const id = document.getElementById("modalGiftId").value;
+      if (useFirebase) {
+        await updateDoc(doc(db, "gifts", id), { reservedBy: "", comment: "" });
+      } else {
+        const idx = gifts.findIndex(g => g.id === id);
+        if (idx !== -1) {
+          gifts[idx].reservedBy = "";
+          gifts[idx].comment = "";
+          saveLocal();
+        }
+      }
+      closeReserveModal();
+    };
+
+    // =========================================================================
+    // MODE PARENTS (AJOUT / ÉDITION / SUPPRESSION)
+    // =========================================================================
+    async function sha256Hex(text) {
+      const data = new TextEncoder().encode(text);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(hashBuffer))
+        .map(b => b.toString(16).padStart(2, "0"))
+        .join("");
+    }
+
+    window.handleParentAuth = function() {
+      if (isParentMode) {
+        isParentMode = false;
+        document.getElementById("parentPanel").classList.add("hidden");
+        document.getElementById("parentBtnLabel").textContent = "Mode Parents";
+        render();
+      } else {
+        document.getElementById("pinInput").value = "";
+        document.getElementById("pinError").classList.add("hidden");
+        document.getElementById("pinModal").classList.remove("hidden");
+        setTimeout(() => document.getElementById("pinInput").focus(), 100);
+      }
+    };
+
+    window.closePinModal = function() {
+      document.getElementById("pinModal").classList.add("hidden");
+    };
+
+    window.verifyPin = async function(e) {
+      e.preventDefault();
+      const val = document.getElementById("pinInput").value.trim();
+      const enteredHash = await sha256Hex(val);
+      if (enteredHash === PARENT_PIN_HASH) {
+        isParentMode = true;
+        closePinModal();
+        document.getElementById("parentPanel").classList.remove("hidden");
+        document.getElementById("parentBtnLabel").textContent = "Quitter Parents";
+        render();
+      } else {
+        document.getElementById("pinError").classList.remove("hidden");
+      }
+    };
+
+    window.handleAddGift = async function(e) {
+      e.preventDefault();
+      const newGift = {
+        list: currentList,
+        title: document.getElementById("giftTitle").value.trim(),
+        price: document.getElementById("giftPrice").value.trim(),
+        url: document.getElementById("giftUrl").value.trim(),
+        image: document.getElementById("giftImage").value.trim(),
+        note: document.getElementById("giftNote").value.trim(),
+        reservedBy: "",
+        comment: ""
+      };
+
+      if (useFirebase) {
+        await addDoc(collection(db, "gifts"), { ...newGift, createdAt: serverTimestamp() });
+      } else {
+        gifts.unshift({ id: "local-" + Date.now(), ...newGift });
+        saveLocal();
+      }
+
+      document.getElementById("addGiftForm").reset();
+    };
+
+    window.openEditModal = function(id) {
+      const gift = gifts.find(g => g.id === id);
+      if (!gift) return;
+      document.getElementById("editGiftId").value = gift.id;
+      document.getElementById("editTitle").value = gift.title;
+      document.getElementById("editList").value = gift.list;
+      document.getElementById("editPrice").value = gift.price || "";
+      document.getElementById("editUrl").value = gift.url || "";
+      document.getElementById("editImage").value = gift.image || "";
+      document.getElementById("editNote").value = gift.note || "";
+      document.getElementById("editModal").classList.remove("hidden");
+    };
+
+    window.closeEditModal = function() {
+      document.getElementById("editModal").classList.add("hidden");
+    };
+
+    window.submitEditGift = async function(e) {
+      e.preventDefault();
+      const id = document.getElementById("editGiftId").value;
+      const updates = {
+        title: document.getElementById("editTitle").value.trim(),
+        list: document.getElementById("editList").value,
+        price: document.getElementById("editPrice").value.trim(),
+        url: document.getElementById("editUrl").value.trim(),
+        image: document.getElementById("editImage").value.trim(),
+        note: document.getElementById("editNote").value.trim()
+      };
+
+      if (useFirebase) {
+        await updateDoc(doc(db, "gifts", id), updates);
+      } else {
+        const idx = gifts.findIndex(g => g.id === id);
+        if (idx !== -1) {
+          gifts[idx] = { ...gifts[idx], ...updates };
+          saveLocal();
+        }
+      }
+      closeEditModal();
+    };
+
+    window.deleteGift = async function(id) {
+      if (!confirm("Supprimer définitivement ce cadeau de la liste ?")) return;
+      if (useFirebase) {
+        await deleteDoc(doc(db, "gifts", id));
+      } else {
+        gifts = gifts.filter(g => g.id !== id);
+        saveLocal();
+      }
+    };
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+  </script>
+</body>
+</html>
