@@ -1,1 +1,16 @@
 
+{
+  "name": "Listes de Cadeaux",
+  "short_name": "Cadeaux 🎅",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fef2f2",
+  "theme_color": "#dc2626",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/3791/3791146.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
