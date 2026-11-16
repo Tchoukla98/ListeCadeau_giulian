@@ -4,11 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listes de Cadeaux — Anniversaire & Noël</title>
-    <link rel="manifest" href="./manifest.json" />
-  <meta name="theme-color" content="#dc2626" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3791/3791146.png" />
- <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
@@ -49,10 +45,13 @@
   <header class="max-w-5xl mx-auto px-4 pb-4">
     <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-5 sm:p-7 border border-white/60 text-center">
 
-      <!-- Badge de connexion centré -->
-      <div class="flex justify-center mb-2">
+      <!-- Badge de connexion + Badge Mode Parents actif juste en dessous -->
+      <div class="flex flex-col items-center gap-1.5 mb-2">
         <span id="connectionBadge" class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-amber-100 text-amber-800">
           <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span> Connexion...
+        </span>
+        <span id="parentActiveBadge" class="hidden inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700">
+          ✨ Mode Parents actif
         </span>
       </div>
 
@@ -68,7 +67,7 @@
       <div class="grid grid-cols-2 gap-3 mt-5 bg-slate-100/90 p-1.5 rounded-2xl">
         <button id="tab-christmas" onclick="switchList('christmas')" class="py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 bg-red-600 text-white shadow-md">
           <span>🎅</span>
-          <span>Liste de Noël</span>
+          <span>Noël</span>
           <span id="count-christmas" class="ml-1 text-xs px-2 py-0.5 rounded-full bg-white/25">0</span>
         </button>
         <button id="tab-birthday" onclick="switchList('birthday')" class="py-3 px-4 rounded-xl font-extrabold text-sm sm:text-base transition-all flex items-center justify-center gap-2 text-slate-600 hover:bg-white/60">
@@ -100,44 +99,60 @@
     </div>
   </header>
 
-  <!-- PANNEAU AJOUT & OPTIONS PARENTS (masqué par défaut) -->
+  <!-- PANNEAU PARENTS (BOUTONS D'ACTION + FORMULAIRE DÉROULANT) -->
   <section id="parentPanel" class="hidden max-w-5xl mx-auto px-4 mb-6">
-    <div class="bg-white rounded-3xl shadow-md p-5 sm:p-6 border-2 border-indigo-200">
-      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <h2 class="text-lg font-extrabold text-indigo-950 flex items-center gap-2">
-          ✨ Ajouter un jouet à la liste (<span id="parentTargetListName">Noël</span>)
-        </h2>
-        <div class="flex items-center gap-2">
-          <button type="button" id="toggleNamesBtn" onclick="toggleHideNames()" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 transition flex items-center gap-1.5">
-            👁️ <span id="toggleNamesLabel">Afficher les prénoms</span>
-          </button>
-          <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1.5 rounded-full">Mode Parents actif</span>
-        </div>
+    <div class="bg-white rounded-3xl shadow-md p-4 sm:p-5 border-2 border-indigo-200">
+      <div class="flex flex-col sm:flex-row gap-2.5">
+        <button type="button" onclick="toggleAddForm()" class="flex-1 py-3 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition flex items-center justify-center gap-2">
+          <span id="toggleAddFormIcon">➕</span>
+          <span>Ajouter un cadeau (<span id="parentTargetListName">Noël</span>)</span>
+        </button>
+
+        <button type="button" id="toggleNamesBtn" onclick="toggleHideNames()" class="py-3 px-4 rounded-2xl bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-xs sm:text-sm transition flex items-center justify-center gap-2">
+          👁️ <span id="toggleNamesLabel">Afficher les prénoms</span>
+        </button>
       </div>
-      <form id="addGiftForm" onsubmit="handleAddGift(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
-        <div class="sm:col-span-4">
+
+      <!-- FORMULAIRE DÉROULANT (MASQUÉ PAR DÉFAUT) -->
+      <form id="addGiftForm" onsubmit="handleAddGift(event)" class="hidden mt-5 pt-5 border-t border-slate-100 grid grid-cols-1 sm:grid-cols-12 gap-3">
+        <div class="sm:col-span-5">
           <label class="block text-xs font-bold text-slate-600 mb-1">Nom du jouet / cadeau *</label>
           <input type="text" id="giftTitle" required placeholder="Ex: Train en bois Brio" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
         </div>
-        <div class="sm:col-span-2">
+        <div class="sm:col-span-3">
           <label class="block text-xs font-bold text-slate-600 mb-1">Prix approx.</label>
           <input type="text" id="giftPrice" placeholder="Ex: 35 €" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
         </div>
-        <div class="sm:col-span-3">
+        <div class="sm:col-span-4">
           <label class="block text-xs font-bold text-slate-600 mb-1">Lien boutique (optionnel)</label>
           <input type="url" id="giftUrl" placeholder="https://..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
         </div>
-        <div class="sm:col-span-3">
-          <label class="block text-xs font-bold text-slate-600 mb-1">Image URL (optionnel)</label>
-          <input type="url" id="giftImage" placeholder="https://.../image.jpg" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
+
+        <!-- TÉLÉCHARGEMENT PHOTO -->
+        <div class="sm:col-span-6">
+          <label class="block text-xs font-bold text-slate-600 mb-1">Photo du cadeau (optionnel)</label>
+          <label class="flex items-center justify-center gap-2 w-full px-3.5 py-2.5 rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/40 cursor-pointer text-xs sm:text-sm font-bold text-indigo-700 transition">
+            <span>📷 Choisir une image</span>
+            <input type="file" id="giftImageFile" accept="image/*" onchange="handleFileSelect(event, 'add')" class="hidden" />
+          </label>
+          <div id="addImagePreviewWrap" class="hidden mt-2 flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
+            <img id="addImagePreview" src="" alt="Aperçu" class="w-12 h-12 rounded-lg object-cover" />
+            <span class="text-xs text-slate-600 flex-1 truncate">Image prête</span>
+            <button type="button" onclick="clearSelectedImage('add')" class="text-xs font-bold text-rose-600 px-2 py-1">Retirer</button>
+          </div>
         </div>
-        <div class="sm:col-span-9">
+
+        <div class="sm:col-span-6">
           <label class="block text-xs font-bold text-slate-600 mb-1">Précisions (taille, couleur, magasin...)</label>
           <input type="text" id="giftNote" placeholder="Ex: Taille 4 ans ou coloris bleu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
         </div>
-        <div class="sm:col-span-3 flex items-end">
-          <button type="submit" class="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-sm transition">
-            + Ajouter à la liste
+
+        <div class="sm:col-span-12 flex justify-end gap-2 pt-1">
+          <button type="button" onclick="toggleAddForm(false)" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
+            Annuler
+          </button>
+          <button type="submit" id="submitAddGiftBtn" class="py-2.5 px-5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-sm transition">
+            ✅ Enregistrer le cadeau
           </button>
         </div>
       </form>
@@ -209,7 +224,7 @@
 
   <!-- MODALE ÉDITION PARENTS -->
   <div id="editModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-black text-slate-900">✏️ Modifier le cadeau</h3>
         <button onclick="closeEditModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
@@ -238,8 +253,16 @@
           <input type="url" id="editUrl" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
         </div>
         <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1">Image URL</label>
-          <input type="url" id="editImage" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+          <label class="block text-xs font-bold text-slate-600 mb-1">Photo du cadeau</label>
+          <label class="flex items-center justify-center gap-2 w-full px-3.5 py-2 rounded-xl border-2 border-dashed border-indigo-200 hover:border-indigo-400 bg-indigo-50/40 cursor-pointer text-xs font-bold text-indigo-700 transition">
+            <span>📷 Changer / choisir une image</span>
+            <input type="file" id="editImageFile" accept="image/*" onchange="handleFileSelect(event, 'edit')" class="hidden" />
+          </label>
+          <div id="editImagePreviewWrap" class="hidden mt-2 flex items-center gap-3 bg-slate-50 p-2 rounded-xl border border-slate-200">
+            <img id="editImagePreview" src="" alt="Aperçu" class="w-12 h-12 rounded-lg object-cover" />
+            <span class="text-xs text-slate-600 flex-1 truncate">Image sélectionnée</span>
+            <button type="button" onclick="clearSelectedImage('edit')" class="text-xs font-bold text-rose-600 px-2 py-1">Supprimer</button>
+          </div>
         </div>
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">Précisions</label>
@@ -282,6 +305,8 @@
     let currentFilter = "all";     // "all" | "available" | "reserved"
     let isParentMode = false;
     let hideNames = true;          // Masqué par défaut
+    let addImageDataUrl = "";      // Image compressée pour ajout
+    let editImageDataUrl = "";     // Image compressée pour édition
     let gifts = [];
     let useFirebase = false;
     let db = null;
@@ -302,28 +327,6 @@
         note: "Compatible avec les rails Brio et Ikea",
         reservedBy: "Mamie & Papi",
         comment: "On s'en occupe avec joie !"
-      },
-      {
-        id: "demo-2",
-        list: "christmas",
-        title: "Cuisinière en bois avec accessoires",
-        price: "79 €",
-        url: "https://www.google.com/search?q=cuisiniere+bois+enfant",
-        image: "",
-        note: "Idéalement couleur bois naturel / blanc",
-        reservedBy: "",
-        comment: ""
-      },
-      {
-        id: "demo-3",
-        list: "birthday",
-        title: "Draisienne évolutive légère",
-        price: "65 €",
-        url: "https://www.google.com/search?q=draisienne+legere+enfant",
-        image: "",
-        note: "Avec selle réglable dès 2 ans",
-        reservedBy: "Tonton Lucas",
-        comment: "Avec un petit casque assorti"
       }
     ];
 
@@ -373,6 +376,74 @@
         render();
       }
     }
+
+    // =========================================================================
+    // COMPRESSION & LECTURE D'IMAGE LOCALE
+    // =========================================================================
+    function compressImageFile(file, maxDimension = 650, quality = 0.72) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = Math.round((height * maxDimension) / width);
+                width = maxDimension;
+              } else {
+                width = Math.round((width * maxDimension) / height);
+                height = maxDimension;
+              }
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL("image/jpeg", quality));
+          };
+          img.onerror = reject;
+          img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    window.handleFileSelect = async function(event, mode) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      try {
+        const compressedDataUrl = await compressImageFile(file);
+        if (mode === "add") {
+          addImageDataUrl = compressedDataUrl;
+          document.getElementById("addImagePreview").src = compressedDataUrl;
+          document.getElementById("addImagePreviewWrap").classList.remove("hidden");
+        } else {
+          editImageDataUrl = compressedDataUrl;
+          document.getElementById("editImagePreview").src = compressedDataUrl;
+          document.getElementById("editImagePreviewWrap").classList.remove("hidden");
+        }
+      } catch (err) {
+        alert("Impossible de charger cette image. Essayez une autre photo.");
+      }
+    };
+
+    window.clearSelectedImage = function(mode) {
+      if (mode === "add") {
+        addImageDataUrl = "";
+        document.getElementById("giftImageFile").value = "";
+        document.getElementById("addImagePreview").src = "";
+        document.getElementById("addImagePreviewWrap").classList.add("hidden");
+      } else {
+        editImageDataUrl = "";
+        document.getElementById("editImageFile").value = "";
+        document.getElementById("editImagePreview").src = "";
+        document.getElementById("editImagePreviewWrap").classList.add("hidden");
+      }
+    };
 
     // =========================================================================
     // NAVIGATION ENTRE LES 2 LISTES & FILTRES
@@ -430,6 +501,19 @@
       }
     }
 
+    window.toggleAddForm = function(forceState) {
+      const form = document.getElementById("addGiftForm");
+      const icon = document.getElementById("toggleAddFormIcon");
+      const shouldOpen = typeof forceState === "boolean" ? forceState : form.classList.contains("hidden");
+      if (shouldOpen) {
+        form.classList.remove("hidden");
+        icon.textContent = "➖";
+      } else {
+        form.classList.add("hidden");
+        icon.textContent = "➕";
+      }
+    };
+
     // =========================================================================
     // RENDU DES CARTES & COMPTEURS
     // =========================================================================
@@ -481,7 +565,7 @@
         return `
           <article class="card-hover bg-white rounded-3xl shadow-sm border ${isReserved ? "border-emerald-200 bg-emerald-50/30" : "border-slate-100"} overflow-hidden flex flex-col justify-between">
             <div>
-              <div class="relative h-40 bg-slate-100 flex items-center justify-center overflow-hidden">
+              <div class="relative h-44 bg-slate-100 flex items-center justify-center overflow-hidden">
                 ${gift.image
                   ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover ${isReserved ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
                      <div class="hidden w-full h-full items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">${placeholderEmoji}</div>`
@@ -683,7 +767,9 @@
         isParentMode = false;
         hideNames = true;
         updateNamesButtonLabel();
+        toggleAddForm(false);
         document.getElementById("parentPanel").classList.add("hidden");
+        document.getElementById("parentActiveBadge").classList.add("hidden");
         document.getElementById("parentBtnLabel").textContent = "Mode Parents";
         render();
       } else {
@@ -707,6 +793,7 @@
         updateNamesButtonLabel();
         closePinModal();
         document.getElementById("parentPanel").classList.remove("hidden");
+        document.getElementById("parentActiveBadge").classList.remove("hidden");
         document.getElementById("parentBtnLabel").textContent = "Quitter Parents";
         render();
       } else {
@@ -716,25 +803,36 @@
 
     window.handleAddGift = async function(e) {
       e.preventDefault();
-      const newGift = {
-        list: currentList,
-        title: document.getElementById("giftTitle").value.trim(),
-        price: document.getElementById("giftPrice").value.trim(),
-        url: document.getElementById("giftUrl").value.trim(),
-        image: document.getElementById("giftImage").value.trim(),
-        note: document.getElementById("giftNote").value.trim(),
-        reservedBy: "",
-        comment: ""
-      };
+      const submitBtn = document.getElementById("submitAddGiftBtn");
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Enregistrement...";
 
-      if (useFirebase) {
-        await addDoc(collection(db, "gifts"), { ...newGift, createdAt: serverTimestamp() });
-      } else {
-        gifts.unshift({ id: "local-" + Date.now(), ...newGift });
-        saveLocal();
+      try {
+        const newGift = {
+          list: currentList,
+          title: document.getElementById("giftTitle").value.trim(),
+          price: document.getElementById("giftPrice").value.trim(),
+          url: document.getElementById("giftUrl").value.trim(),
+          image: addImageDataUrl || "",
+          note: document.getElementById("giftNote").value.trim(),
+          reservedBy: "",
+          comment: ""
+        };
+
+        if (useFirebase) {
+          await addDoc(collection(db, "gifts"), { ...newGift, createdAt: serverTimestamp() });
+        } else {
+          gifts.unshift({ id: "local-" + Date.now(), ...newGift });
+          saveLocal();
+        }
+
+        document.getElementById("addGiftForm").reset();
+        clearSelectedImage("add");
+        toggleAddForm(false);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "✅ Enregistrer le cadeau";
       }
-
-      document.getElementById("addGiftForm").reset();
     };
 
     window.openEditModal = function(id) {
@@ -745,8 +843,18 @@
       document.getElementById("editList").value = gift.list;
       document.getElementById("editPrice").value = gift.price || "";
       document.getElementById("editUrl").value = gift.url || "";
-      document.getElementById("editImage").value = gift.image || "";
       document.getElementById("editNote").value = gift.note || "";
+      document.getElementById("editImageFile").value = "";
+
+      editImageDataUrl = gift.image || "";
+      if (editImageDataUrl) {
+        document.getElementById("editImagePreview").src = editImageDataUrl;
+        document.getElementById("editImagePreviewWrap").classList.remove("hidden");
+      } else {
+        document.getElementById("editImagePreview").src = "";
+        document.getElementById("editImagePreviewWrap").classList.add("hidden");
+      }
+
       document.getElementById("editModal").classList.remove("hidden");
     };
 
@@ -762,7 +870,7 @@
         list: document.getElementById("editList").value,
         price: document.getElementById("editPrice").value.trim(),
         url: document.getElementById("editUrl").value.trim(),
-        image: document.getElementById("editImage").value.trim(),
+        image: editImageDataUrl || "",
         note: document.getElementById("editNote").value.trim()
       };
 
