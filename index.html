@@ -29,7 +29,7 @@
 </head>
 <body class="theme-christmas min-h-screen text-slate-800 pb-16">
 
-  <!-- BANNIÈRE MODE DÉMO (masquée automatiquement dès que Firebase est actif) -->
+  <!-- BANNIÈRE MODE DÉMO -->
   <div id="demoBanner" class="bg-amber-600 text-white text-xs sm:text-sm py-2 px-4 text-center font-semibold shadow-sm">
     ⚠️ Mode Démonstration (sauvegarde locale sur cet appareil).
   </div>
@@ -50,11 +50,8 @@
           </p>
         </div>
 
-        <!-- BOUTONS PARENTS / CONFIDENTIALITÉ -->
+        <!-- BOUTON ACCÈS PARENTS -->
         <div class="flex flex-wrap items-center gap-2">
-          <button id="toggleNamesBtn" onclick="toggleHideNames()" class="text-xs sm:text-sm font-bold px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition flex items-center gap-1.5" title="Masquer ou afficher qui a réservé quoi">
-            👁️ <span id="toggleNamesLabel">Masquer les prénoms</span>
-          </button>
           <button id="parentModeBtn" onclick="handleParentAuth()" class="text-xs sm:text-sm font-bold px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white transition flex items-center gap-1.5 shadow-sm">
             🔒 <span id="parentBtnLabel">Mode Parents</span>
           </button>
@@ -96,14 +93,19 @@
     </div>
   </header>
 
-  <!-- PANNEAU AJOUT PARENTS (masqué par défaut) -->
+  <!-- PANNEAU AJOUT & OPTIONS PARENTS (masqué par défaut) -->
   <section id="parentPanel" class="hidden max-w-5xl mx-auto px-4 mb-6">
     <div class="bg-white rounded-3xl shadow-md p-5 sm:p-6 border-2 border-indigo-200">
-      <div class="flex items-center justify-between mb-4">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <h2 class="text-lg font-extrabold text-indigo-950 flex items-center gap-2">
           ✨ Ajouter un jouet à la liste (<span id="parentTargetListName">Noël</span>)
         </h2>
-        <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full">Mode Parents actif</span>
+        <div class="flex items-center gap-2">
+          <button type="button" id="toggleNamesBtn" onclick="toggleHideNames()" class="text-xs font-bold px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 transition flex items-center gap-1.5">
+            👁️ <span id="toggleNamesLabel">Afficher les prénoms</span>
+          </button>
+          <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2.5 py-1.5 rounded-full">Mode Parents actif</span>
+        </div>
       </div>
       <form id="addGiftForm" onsubmit="handleAddGift(event)" class="grid grid-cols-1 sm:grid-cols-12 gap-3">
         <div class="sm:col-span-4">
@@ -186,7 +188,7 @@
     <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl text-center">
       <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center text-2xl mx-auto mb-3">🔐</div>
       <h3 class="text-lg font-black text-slate-900">Accès Parents</h3>
-      <p class="text-xs text-slate-500 mt-1 mb-4">Entrez le code PIN pour ajouter ou supprimer des cadeaux.</p>
+      <p class="text-xs text-slate-500 mt-1 mb-4">Entrez le code PIN pour gérer la liste et voir les prénoms.</p>
       <form onsubmit="verifyPin(event)" class="space-y-3">
         <input type="password" id="pinInput" inputmode="numeric" maxlength="12" required placeholder="••••••••" class="w-full text-center tracking-widest text-xl font-black px-4 py-2.5 rounded-xl border border-slate-300 focus:border-indigo-500 outline-none" />
         <p id="pinError" class="hidden text-xs font-bold text-rose-600">Code incorrect</p>
@@ -252,7 +254,7 @@
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // =========================================================================
-    // 1. CONFIGURATION FIREBASE (VOS CLÉS)
+    // 1. CONFIGURATION FIREBASE
     // =========================================================================
     const firebaseConfig = {
       apiKey: "AIzaSyDD9gYUT-g3FX9-wcsOA7innUum26yOPBk",
@@ -263,9 +265,8 @@
       appId: "1:897843250691:web:8201131d24b467d6583036"
     };
 
-    // Code PIN administrateur (Parents) — vérifié par empreinte SHA-256
+    // Empreinte SHA-256 du code PIN Parents
     const PARENT_PIN_HASH = "9eb8ed33f5a5735079434be73a0c04416d7e4314a3501c5875f78223d311a79d";
-
 
     // =========================================================================
     // ÉTAT GLOBAL
@@ -273,7 +274,7 @@
     let currentList = "christmas"; // "christmas" | "birthday"
     let currentFilter = "all";     // "all" | "available" | "reserved"
     let isParentMode = false;
-    let hideNames = false;
+    let hideNames = true;          // Masqué par défaut !
     let gifts = [];
     let useFirebase = false;
     let db = null;
@@ -282,7 +283,6 @@
       firebaseConfig.apiKey &&
       !firebaseConfig.apiKey.startsWith("REMPLACER");
 
-    // Données d'exemple si mode démo local
     const DEMO_STORAGE_KEY = "family_wishlists_v1";
     const defaultDemoGifts = [
       {
@@ -309,17 +309,6 @@
       },
       {
         id: "demo-3",
-        list: "christmas",
-        title: "Collection de livres « Petit Ours Brun »",
-        price: "20 €",
-        url: "",
-        image: "",
-        note: "N'importe quels tomes pour l'histoire du soir",
-        reservedBy: "",
-        comment: ""
-      },
-      {
-        id: "demo-4",
         list: "birthday",
         title: "Draisienne évolutive légère",
         price: "65 €",
@@ -328,17 +317,6 @@
         note: "Avec selle réglable dès 2 ans",
         reservedBy: "Tonton Lucas",
         comment: "Avec un petit casque assorti"
-      },
-      {
-        id: "demo-5",
-        list: "birthday",
-        title: "Boîte de Duplo « Les animaux de la ferme »",
-        price: "30 €",
-        url: "",
-        image: "",
-        note: "",
-        reservedBy: "",
-        comment: ""
       }
     ];
 
@@ -359,6 +337,8 @@
         onSnapshot(collection(db, "gifts"), (snapshot) => {
           gifts = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
           render();
+        }, (err) => {
+          console.error("Erreur lecture Firestore :", err);
         });
       } catch (err) {
         console.error("Erreur Firebase, bascule en mode local :", err);
@@ -430,10 +410,18 @@
     };
 
     window.toggleHideNames = function() {
+      if (!isParentMode) return;
       hideNames = !hideNames;
-      document.getElementById("toggleNamesLabel").textContent = hideNames ? "Afficher les prénoms" : "Masquer les prénoms";
+      updateNamesButtonLabel();
       render();
     };
+
+    function updateNamesButtonLabel() {
+      const label = document.getElementById("toggleNamesLabel");
+      if (label) {
+        label.textContent = hideNames ? "Afficher les prénoms" : "Masquer les prénoms";
+      }
+    }
 
     // =========================================================================
     // RENDU DES CARTES & COMPTEURS
@@ -461,7 +449,6 @@
         return true;
       });
 
-      // Trier : disponibles en premier, réservés ensuite
       filtered.sort((a, b) => {
         const aRes = Boolean(a.reservedBy && a.reservedBy.trim());
         const bRes = Boolean(b.reservedBy && b.reservedBy.trim());
@@ -480,13 +467,13 @@
       emptyState.classList.add("hidden");
       grid.innerHTML = filtered.map(gift => {
         const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim());
-        const displayName = hideNames ? "un proche 🤫" : escapeHtml(gift.reservedBy);
+        const showRealName = isParentMode && !hideNames;
+        const displayName = showRealName ? escapeHtml(gift.reservedBy) : "un proche 🤫";
         const placeholderEmoji = currentList === "christmas" ? "🎄" : "🎈";
 
         return `
           <article class="card-hover bg-white rounded-3xl shadow-sm border ${isReserved ? "border-emerald-200 bg-emerald-50/30" : "border-slate-100"} overflow-hidden flex flex-col justify-between">
             <div>
-              <!-- Image ou bandeau visuel -->
               <div class="relative h-40 bg-slate-100 flex items-center justify-center overflow-hidden">
                 ${gift.image
                   ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover ${isReserved ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
@@ -494,16 +481,13 @@
                   : `<div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br ${currentList === "christmas" ? "from-red-50 to-emerald-50" : "from-amber-50 to-orange-100"}">${placeholderEmoji}</div>`
                 }
 
-                <!-- Badge Statut -->
                 <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${isReserved ? "bg-emerald-600 text-white" : "bg-white/95 text-slate-800"}">
                   ${isReserved ? "✅ Réservé" : "✨ Disponible"}
                 </span>
 
-                <!-- Badge Prix -->
                 ${gift.price ? `<span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-extrabold bg-slate-900/80 text-white backdrop-blur-sm">${escapeHtml(gift.price)}</span>` : ""}
               </div>
 
-              <!-- Contenu -->
               <div class="p-5">
                 <h3 class="font-extrabold text-lg text-slate-900 leading-snug ${isReserved ? "line-through decoration-emerald-500/60 text-slate-600" : ""}">
                   ${escapeHtml(gift.title)}
@@ -520,13 +504,12 @@
                 ${isReserved ? `
                   <div class="mt-4 p-3 rounded-2xl bg-emerald-100/70 border border-emerald-200 text-xs text-emerald-950">
                     <p class="font-extrabold">🎁 Pris par : ${displayName}</p>
-                    ${gift.comment && !hideNames ? `<p class="mt-1 italic text-emerald-800">« ${escapeHtml(gift.comment)} »</p>` : ""}
+                    ${gift.comment && showRealName ? `<p class="mt-1 italic text-emerald-800">« ${escapeHtml(gift.comment)} »</p>` : ""}
                   </div>
                 ` : ""}
               </div>
             </div>
 
-            <!-- Actions -->
             <div class="px-5 pb-5 pt-2 flex flex-col gap-2">
               ${isReserved
                 ? `<button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition">
@@ -564,8 +547,8 @@
       document.getElementById("modalGiftTitle").textContent = gift.title;
 
       const savedUser = localStorage.getItem("family_member_name") || "";
-      document.getElementById("reserverName").value = gift.reservedBy || savedUser;
-      document.getElementById("reserverComment").value = gift.comment || "";
+      document.getElementById("reserverName").value = (isParentMode && !hideNames) ? (gift.reservedBy || savedUser) : savedUser;
+      document.getElementById("reserverComment").value = (isParentMode && !hideNames) ? (gift.comment || "") : "";
 
       const cancelBtn = document.getElementById("cancelReservationBtn");
       if (gift.reservedBy && gift.reservedBy.trim() !== "") {
@@ -619,19 +602,80 @@
     };
 
     // =========================================================================
-    // MODE PARENTS (AJOUT / ÉDITION / SUPPRESSION)
+    // SHA-256 AUTONOME (FONCTIONNE PARTOUT SANS RESTRICTION HTTPS/LOCAL)
     // =========================================================================
-    async function sha256Hex(text) {
-      const data = new TextEncoder().encode(text);
-      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-      return Array.from(new Uint8Array(hashBuffer))
-        .map(b => b.toString(16).padStart(2, "0"))
-        .join("");
+    function sha256Pure(ascii) {
+      function rightRotate(value, amount) {
+        return (value >>> amount) | (value << (32 - amount));
+      }
+      const mathPow = Math.pow;
+      const maxWord = mathPow(2, 32);
+      let result = '';
+      const words = [];
+      const asciiBitLength = ascii.length * 8;
+      const hash = [];
+      const k = [];
+      let primeCounter = 0;
+      const isComposite = {};
+
+      for (let candidate = 2; primeCounter < 64; candidate++) {
+        if (!isComposite[candidate]) {
+          for (let i = 0; i < 313; i += candidate) isComposite[i] = candidate;
+          hash[primeCounter] = (mathPow(candidate, 0.5) * maxWord) | 0;
+          k[primeCounter++] = (mathPow(candidate, 1 / 3) * maxWord) | 0;
+        }
+      }
+
+      ascii += '\x80';
+      while (ascii.length % 64 - 56) ascii += '\x00';
+      for (let i = 0; i < ascii.length; i++) {
+        const j = ascii.charCodeAt(i);
+        words[i >> 2] |= j << ((3 - i) % 4) * 8;
+      }
+      words[words.length] = ((asciiBitLength / maxWord) | 0);
+      words[words.length] = (asciiBitLength);
+
+      for (let j = 0; j < words.length;) {
+        const w = words.slice(j, j += 16);
+        const oldHash = hash.slice(0);
+        for (let i = 0; i < 64; i++) {
+          const w15 = w[i - 15], w2 = w[i - 2];
+          const a = hash[0], e = hash[4];
+          const temp1 = hash[7]
+            + (rightRotate(e, 6) ^ rightRotate(e, 11) ^ rightRotate(e, 25))
+            + ((e & hash[5]) ^ ((~e) & hash[6]))
+            + k[i]
+            + (w[i] = (i < 16) ? w[i] : (
+              w[i - 16]
+              + (rightRotate(w15, 7) ^ rightRotate(w15, 18) ^ (w15 >>> 3))
+              + w[i - 7]
+              + (rightRotate(w2, 17) ^ rightRotate(w2, 19) ^ (w2 >>> 10))
+            ) | 0);
+          const temp2 = (rightRotate(a, 2) ^ rightRotate(a, 13) ^ rightRotate(a, 22))
+            + ((a & hash[1]) ^ (a & hash[2]) ^ (hash[1] & hash[2]));
+          hash.unshift((temp1 + temp2) | 0);
+          hash[4] = (hash[4] + temp1) | 0;
+          hash.pop();
+        }
+        for (let i = 0; i < 8; i++) hash[i] = (hash[i] + oldHash[i]) | 0;
+      }
+      for (let i = 0; i < 8; i++) {
+        for (let j = 3; j + 1; j--) {
+          const b = (hash[i] >> (j * 8)) & 255;
+          result += ((b < 16) ? '0' : '') + b.toString(16);
+        }
+      }
+      return result;
     }
 
+    // =========================================================================
+    // MODE PARENTS (AJOUT / ÉDITION / SUPPRESSION / VISIBILITÉ PRÉNOMS)
+    // =========================================================================
     window.handleParentAuth = function() {
       if (isParentMode) {
         isParentMode = false;
+        hideNames = true; // Remasque automatiquement les prénoms en quittant le mode Parents
+        updateNamesButtonLabel();
         document.getElementById("parentPanel").classList.add("hidden");
         document.getElementById("parentBtnLabel").textContent = "Mode Parents";
         render();
@@ -647,12 +691,13 @@
       document.getElementById("pinModal").classList.add("hidden");
     };
 
-    window.verifyPin = async function(e) {
+    window.verifyPin = function(e) {
       e.preventDefault();
       const val = document.getElementById("pinInput").value.trim();
-      const enteredHash = await sha256Hex(val);
+      const enteredHash = sha256Pure(val);
       if (enteredHash === PARENT_PIN_HASH) {
         isParentMode = true;
+        updateNamesButtonLabel();
         closePinModal();
         document.getElementById("parentPanel").classList.remove("hidden");
         document.getElementById("parentBtnLabel").textContent = "Quitter Parents";
