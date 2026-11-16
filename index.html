@@ -34,8 +34,15 @@
     ⚠️ Mode Démonstration (sauvegarde locale sur cet appareil).
   </div>
 
+  <!-- BOUTON MODE PARENTS EN DEHORS DU CADRE, TOUT EN HAUT, SUR TOUTE LA LARGEUR ET CENTRÉ -->
+  <div class="max-w-5xl mx-auto px-4 pt-5 pb-3">
+    <button id="parentModeBtn" onclick="handleParentAuth()" class="w-full py-3.5 px-5 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-md">
+      🔒 <span id="parentBtnLabel">Mode Parents</span>
+    </button>
+  </div>
+
   <!-- HEADER CENTRÉ SUR TOUTE LA LARGEUR DU CADRE -->
-  <header class="max-w-5xl mx-auto px-4 pt-6 pb-4">
+  <header class="max-w-5xl mx-auto px-4 pb-4">
     <div class="bg-white/90 backdrop-blur-md rounded-3xl shadow-lg p-5 sm:p-7 border border-white/60 text-center">
 
       <!-- Badge de connexion centré -->
@@ -52,13 +59,6 @@
       <p id="mainSubtitle" class="text-slate-500 text-sm sm:text-base mt-1">
         Choisissez un cadeau pour éviter les doublons — modifiable à tout moment !
       </p>
-
-      <!-- Bouton Mode Parents sur toute la largeur et centré -->
-      <div class="mt-4">
-        <button id="parentModeBtn" onclick="handleParentAuth()" class="w-full py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm transition flex items-center justify-center gap-2 shadow-sm">
-          🔒 <span id="parentBtnLabel">Mode Parents</span>
-        </button>
-      </div>
 
       <!-- SÉLECTEUR DES 2 LISTES (ONGLETS) -->
       <div class="grid grid-cols-2 gap-3 mt-5 bg-slate-100/90 p-1.5 rounded-2xl">
