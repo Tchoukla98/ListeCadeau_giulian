@@ -171,6 +171,37 @@
     </div>
   </main>
 
+  <!-- MODALE APERÇU PHOTO ENTIÈRE + DESCRIPTIF -->
+  <div id="photoModal" onclick="if (event.target === this) closePhotoModal()" class="hidden fixed inset-0 z-50 bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+      <!-- Zone image entière -->
+      <div class="relative bg-slate-950 flex items-center justify-center">
+        <img id="photoModalImg" src="" alt="Aperçu complet" class="w-full max-h-[58vh] object-contain" />
+        <button onclick="closePhotoModal()" class="absolute top-3 right-3 w-9 h-9 rounded-full bg-white/90 hover:bg-white text-slate-900 flex items-center justify-center font-black shadow-md transition" aria-label="Fermer">
+          ✕
+        </button>
+        <span id="photoModalPrice" class="hidden absolute bottom-3 right-3 px-3 py-1 rounded-full text-xs font-extrabold bg-slate-900/85 text-white backdrop-blur-sm"></span>
+      </div>
+
+      <!-- Zone descriptif -->
+      <div class="p-5 sm:p-6 overflow-y-auto space-y-3">
+        <div class="flex items-start justify-between gap-3">
+          <h3 id="photoModalTitle" class="text-xl font-black text-slate-900 leading-snug"></h3>
+          <span id="photoModalStatus" class="shrink-0 px-3 py-1 rounded-full text-xs font-extrabold"></span>
+        </div>
+
+        <p id="photoModalNote" class="hidden text-sm text-slate-600 leading-relaxed whitespace-pre-line"></p>
+
+        <div class="pt-2 flex flex-col sm:flex-row gap-2">
+          <a id="photoModalUrl" href="#" target="_blank" rel="noopener noreferrer" class="hidden flex-1 py-2.5 px-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs sm:text-sm text-center transition">
+            🔗 Voir en boutique ↗
+          </a>
+          <button id="photoModalActionBtn" type="button" class="flex-1 py-2.5 px-4 rounded-xl font-extrabold text-xs sm:text-sm shadow-sm transition"></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- MODALE RÉSERVATION / MODIFICATION PAR LA FAMILLE -->
   <div id="reserveModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
@@ -380,7 +411,7 @@
     // =========================================================================
     // COMPRESSION & LECTURE D'IMAGE LOCALE
     // =========================================================================
-    function compressImageFile(file, maxDimension = 650, quality = 0.72) {
+    function compressImageFile(file, maxDimension = 800, quality = 0.78) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -443,6 +474,72 @@
         document.getElementById("editImagePreview").src = "";
         document.getElementById("editImagePreviewWrap").classList.add("hidden");
       }
+    };
+
+    // =========================================================================
+    // MODALE APERÇU PHOTO ENTIÈRE + DESCRIPTIF
+    // =========================================================================
+    window.openPhotoModal = function(giftId) {
+      const gift = gifts.find(g => g.id === giftId);
+      if (!gift || !gift.image) return;
+
+      const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim());
+
+      document.getElementById("photoModalImg").src = gift.image;
+      document.getElementById("photoModalTitle").textContent = gift.title;
+
+      const priceEl = document.getElementById("photoModalPrice");
+      if (gift.price) {
+        priceEl.textContent = gift.price;
+        priceEl.classList.remove("hidden");
+      } else {
+        priceEl.classList.add("hidden");
+      }
+
+      const statusEl = document.getElementById("photoModalStatus");
+      if (isReserved) {
+        statusEl.textContent = "✅ Réservé";
+        statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-600 text-white";
+      } else {
+        statusEl.textContent = "✨ Disponible";
+        statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-slate-100 text-slate-800";
+      }
+
+      const noteEl = document.getElementById("photoModalNote");
+      if (gift.note && gift.note.trim() !== "") {
+        noteEl.textContent = gift.note;
+        noteEl.classList.remove("hidden");
+      } else {
+        noteEl.classList.add("hidden");
+      }
+
+      const urlEl = document.getElementById("photoModalUrl");
+      if (gift.url && gift.url.trim() !== "") {
+        urlEl.href = gift.url;
+        urlEl.classList.remove("hidden");
+      } else {
+        urlEl.classList.add("hidden");
+      }
+
+      const actionBtn = document.getElementById("photoModalActionBtn");
+      if (isReserved) {
+        actionBtn.textContent = "✏️ Modifier / Libérer ce choix";
+        actionBtn.className = "flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition";
+      } else {
+        actionBtn.textContent = "🙋‍♂️ Je le prends !";
+        actionBtn.className = `flex-1 py-2.5 px-4 rounded-xl ${currentList === "christmas" ? "bg-red-600 hover:bg-red-700" : "bg-amber-500 hover:bg-amber-600"} text-white font-extrabold text-xs sm:text-sm shadow-sm transition`;
+      }
+      actionBtn.onclick = () => {
+        closePhotoModal();
+        openReserveModal(gift.id);
+      };
+
+      document.getElementById("photoModal").classList.remove("hidden");
+    };
+
+    window.closePhotoModal = function() {
+      document.getElementById("photoModal").classList.add("hidden");
+      document.getElementById("photoModalImg").src = "";
     };
 
     // =========================================================================
@@ -561,14 +658,16 @@
         const showRealName = isParentMode && !hideNames;
         const displayName = showRealName ? escapeHtml(gift.reservedBy) : "un proche 🤫";
         const placeholderEmoji = currentList === "christmas" ? "🎄" : "🎈";
+        const hasImage = Boolean(gift.image && gift.image.trim() !== "");
 
         return `
           <article class="card-hover bg-white rounded-3xl shadow-sm border ${isReserved ? "border-emerald-200 bg-emerald-50/30" : "border-slate-100"} overflow-hidden flex flex-col justify-between">
             <div>
-              <div class="relative h-44 bg-slate-100 flex items-center justify-center overflow-hidden">
-                ${gift.image
-                  ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover ${isReserved ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
-                     <div class="hidden w-full h-full items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">${placeholderEmoji}</div>`
+              <div ${hasImage ? `onclick="openPhotoModal('${gift.id}')"` : ""} class="relative h-44 bg-slate-100 flex items-center justify-center overflow-hidden ${hasImage ? "cursor-zoom-in group" : ""}">
+                ${hasImage
+                  ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isReserved ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                     <div class="hidden w-full h-full items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">${placeholderEmoji}</div>
+                     <span class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-black/60 text-white backdrop-blur-sm">🔍 Agrandir</span>`
                   : `<div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br ${currentList === "christmas" ? "from-red-50 to-emerald-50" : "from-amber-50 to-orange-100"}">${placeholderEmoji}</div>`
                 }
 
