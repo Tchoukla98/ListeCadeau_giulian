@@ -549,7 +549,7 @@
 
       const actionBtn = document.getElementById("photoModalActionBtn");
       if (isReserved) {
-        actionBtn.textContent = "✏️ Modifier / Libérer ce choix";
+        actionBtn.textContent = "🔒 Modifier / Libérer ce choix";
         actionBtn.className = "flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition";
       } else {
         actionBtn.textContent = "🙋‍♂️ Je le prends !";
@@ -663,10 +663,12 @@
         return true;
       });
 
+      // Tri : Disponibles (A -> Z) puis Réservés (A -> Z)
       filtered.sort((a, b) => {
         const aRes = Boolean(a.reservedBy && a.reservedBy.trim());
         const bRes = Boolean(b.reservedBy && b.reservedBy.trim());
-        return aRes - bRes;
+        if (aRes !== bRes) return aRes - bRes;
+        return (a.title || "").trim().localeCompare((b.title || "").trim(), "fr", { sensitivity: "base" });
       });
 
       const grid = document.getElementById("giftsGrid");
@@ -757,7 +759,7 @@
     // =========================================================================
     function isPinAuthorizedForGift(gift, enteredPin) {
       if (isParentMode) return true;
-      if (!gift.reservedPinHash) return true; // Rétrocompatibilité anciens cadeaux sans PIN
+      if (!gift.reservedPinHash) return true;
       const cleanPin = (enteredPin || "").trim();
       if (!cleanPin) return false;
       const hash = sha256Pure(cleanPin);
@@ -790,7 +792,6 @@
         nameInput.value = (isParentMode && !hideNames) ? gift.reservedBy : (savedUser || "");
         document.getElementById("reserverComment").value = (isParentMode && !hideNames) ? (gift.comment || "") : "";
 
-        // Si le téléphone a le bon PIN mémorisé pour ce cadeau, on le pré-remplit, sinon vide
         if (savedPin && gift.reservedPinHash && sha256Pure(savedPin) === gift.reservedPinHash) {
           pinInput.value = savedPin;
         } else {
@@ -843,13 +844,11 @@
       const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim() !== "");
 
       if (isReserved) {
-        // Vérification du code PIN avant modification
         if (!isPinAuthorizedForGift(gift, pin)) {
           document.getElementById("reserverPinError").classList.remove("hidden");
           return;
         }
       } else {
-        // Nouvelle réservation : exiger 4 chiffres
         if (!/^\d{4}$/.test(pin)) {
           alert("Merci de saisir un code secret composé exactement de 4 chiffres.");
           return;
@@ -892,7 +891,6 @@
 
       const pin = document.getElementById("reserverPin").value.trim();
 
-      // Vérification du code PIN avant libération
       if (!isPinAuthorizedForGift(gift, pin)) {
         document.getElementById("reserverPinError").classList.remove("hidden");
         return;
