@@ -169,6 +169,17 @@
           <input type="text" id="giftNote" placeholder="Ex: Taille 4 ans ou coloris bleu" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
         </div>
 
+        <!-- CASE MULTI-ACHETEURS -->
+        <div id="addMultiBuyerWrap" class="sm:col-span-12">
+          <label class="flex items-start sm:items-center gap-3 p-3 rounded-2xl bg-sky-50/80 border border-sky-200 cursor-pointer hover:bg-sky-100/70 transition">
+            <input type="checkbox" id="giftMultiBuyer" class="mt-0.5 sm:mt-0 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
+            <div class="text-xs sm:text-sm">
+              <span class="font-extrabold text-sky-950">🤝 Cadeau multi-acheteurs (acheter à plusieurs / cumulable)</span>
+              <p class="text-[11px] text-sky-800">Permet à plusieurs proches de participer ensemble (ex : gros cadeau commun ou cartes V-Bucks).</p>
+            </div>
+          </label>
+        </div>
+
         <div class="sm:col-span-12 flex justify-end gap-2 pt-1">
           <button type="button" onclick="toggleAddForm(false)" class="py-2.5 px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm">
             Annuler
@@ -222,9 +233,9 @@
     </div>
   </div>
 
-  <!-- MODALE RÉSERVATION / MODIFICATION PAR LA FAMILLE -->
+  <!-- MODALE RÉSERVATION / MODIFICATION PAR LA FAMILLE (CLASSIQUE & MULTI-ACHETEURS) -->
   <div id="reserveModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl max-h-[92vh] overflow-y-auto">
       <div class="flex items-start justify-between gap-3 mb-4">
         <div>
           <span id="reserveModalBadge" class="text-xs font-extrabold uppercase tracking-wider text-emerald-600">Réservation cadeau</span>
@@ -233,14 +244,30 @@
         <button onclick="closeReserveModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
       </div>
 
+      <!-- LISTE DES PARTICIPANTS (MODE MULTI-ACHETEURS UNIQUEMENT) -->
+      <div id="multiParticipantsSection" class="hidden mb-4 p-3.5 rounded-2xl bg-sky-50 border border-sky-200 space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-extrabold text-sky-950" id="multiParticipantsHeader">🤝 Participants actuels</span>
+          <button type="button" id="newParticipantBtn" onclick="resetMultiFormToAdd()" class="hidden text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 underline">
+            + Nouvelle participation
+          </button>
+        </div>
+        <div id="multiParticipantsList" class="space-y-1.5">
+          <!-- Injecté en JS -->
+        </div>
+      </div>
+
       <form onsubmit="submitReservation(event)" class="space-y-4">
         <input type="hidden" id="modalGiftId" />
+        <input type="hidden" id="modalContributionId" />
 
+        <!-- PRÉNOM -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Votre prénom (ou surnom) *</label>
           <input type="text" id="reserverName" required placeholder="Ex: Mamie, Tonton Lucas, Marraine..." class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm font-semibold" />
         </div>
 
+        <!-- CODE PIN PERSONNEL À 4 CHIFFRES JUSTE EN DESSOUS DU NOM -->
         <div>
           <label id="reserverPinLabel" class="block text-xs font-bold text-slate-700 mb-1">
             Choisissez un code secret à 4 chiffres *
@@ -259,13 +286,22 @@
             Permet de protéger votre réservation contre les fausses manipulations.
           </p>
           <p id="reserverPinError" class="hidden text-xs font-bold text-rose-600 mt-1">
-            ❌ Code secret incorrect. Seule la personne ayant réservé ce cadeau peut le modifier ou le libérer.
+            ❌ Code secret incorrect. Seule la personne concernée peut modifier ou retirer ce choix.
           </p>
         </div>
 
+        <!-- CHAMP MONTANT FACULTATIF (AFFICHÉ UNIQUEMENT POUR LES CADEAUX MULTI-ACHETEURS) -->
+        <div id="reserverAmountWrap" class="hidden">
+          <label class="block text-xs font-bold text-slate-700 mb-1">
+            Montant de votre participation <span class="font-normal text-slate-400">(facultatif)</span>
+          </label>
+          <input type="text" id="reserverAmount" placeholder="Ex: 20 € (laisser vide si non souhaité)" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm" />
+        </div>
+
+        <!-- PETIT MESSAGE -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Petit message (optionnel)</label>
-          <input type="text" id="reserverComment" placeholder="Ex: Commandé ! / Participation à plusieurs" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm" />
+          <input type="text" id="reserverComment" placeholder="Ex: Commandé ! / Participation au cadeau commun" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-200 outline-none text-sm" />
         </div>
 
         <div class="flex flex-col sm:flex-row gap-2 pt-2">
@@ -345,6 +381,15 @@
           <label class="block text-xs font-bold text-slate-600 mb-1">Précisions</label>
           <input type="text" id="editNote" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
         </div>
+
+        <!-- CASE MULTI-ACHETEURS EN ÉDITION -->
+        <div>
+          <label class="flex items-center gap-2.5 p-2.5 rounded-xl bg-sky-50 border border-sky-200 cursor-pointer">
+            <input type="checkbox" id="editMultiBuyer" class="w-4 h-4 rounded text-indigo-600" />
+            <span class="text-xs font-extrabold text-sky-950">🤝 Cadeau multi-acheteurs (participation à plusieurs)</span>
+          </label>
+        </div>
+
         <div class="flex gap-2 pt-2">
           <button type="button" onclick="closeEditModal()" class="flex-1 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Annuler</button>
           <button type="submit" class="flex-1 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm">Enregistrer</button>
@@ -378,11 +423,10 @@
     // =========================================================================
     // ÉTAT GLOBAL
     // =========================================================================
-    // "christmas" | "birthday" | "parent_christmas" | "parent_birthday"
     let currentList = "christmas";
-    let currentFilter = "all"; // "all" | "available" | "reserved"
+    let currentFilter = "all";
     let isParentMode = false;
-    let hideNames = true;      // Masqué par défaut
+    let hideNames = true;
     let addImageDataUrl = "";
     let editImageDataUrl = "";
     let gifts = [];
@@ -438,11 +482,45 @@
         url: "https://www.google.com/search?q=circuit+train+bois",
         image: "",
         note: "Compatible avec les rails Brio et Ikea",
+        isMultiBuyer: false,
+        contributions: [],
         reservedBy: "Mamie & Papi",
         reservedPinHash: sha256Pure("1234"),
         comment: "On s'en occupe avec joie !"
       }
     ];
+
+    // =========================================================================
+    // HELPERS MULTI-ACHETEURS & STATUTS
+    // =========================================================================
+    function getContributions(gift) {
+      if (Array.isArray(gift.contributions)) return gift.contributions;
+      // Compatibilité si un cadeau avait déjà une réservation classique avant d'être basculé en multi
+      if (gift.isMultiBuyer && gift.reservedBy && gift.reservedBy.trim() !== "") {
+        return [{
+          id: "legacy-1",
+          name: gift.reservedBy.trim(),
+          pinHash: gift.reservedPinHash || "",
+          amount: "",
+          comment: gift.comment || ""
+        }];
+      }
+      return [];
+    }
+
+    function isGiftTaken(gift) {
+      if (gift.isMultiBuyer) {
+        return getContributions(gift).length > 0;
+      }
+      return Boolean(gift.reservedBy && gift.reservedBy.trim() !== "");
+    }
+
+    function parseAmountValue(amountStr) {
+      if (!amountStr) return 0;
+      const normalized = String(amountStr).replace(",", ".").replace(/[^0-9.]/g, "");
+      const num = parseFloat(normalized);
+      return isNaN(num) ? 0 : num;
+    }
 
     // =========================================================================
     // INITIALISATION DONNÉES (FIREBASE OU LOCALSTORAGE)
@@ -567,7 +645,8 @@
       if (!gift || !gift.image) return;
 
       const isPrivateList = Boolean(LIST_META[gift.list]?.isPrivate);
-      const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim());
+      const isTaken = isGiftTaken(gift);
+      const contribs = getContributions(gift);
 
       document.getElementById("photoModalImg").src = gift.image;
       document.getElementById("photoModalTitle").textContent = gift.title;
@@ -581,11 +660,17 @@
       }
 
       const statusEl = document.getElementById("photoModalStatus");
-      if (isReserved) {
-        statusEl.textContent = isPrivateList ? "✅ Acheté / Validé" : "✅ Réservé";
+      if (isPrivateList) {
+        statusEl.textContent = isTaken ? "✅ Acheté / Validé" : "💡 Idée";
+        statusEl.className = `shrink-0 px-3 py-1 rounded-full text-xs font-extrabold ${isTaken ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-800"}`;
+      } else if (gift.isMultiBuyer) {
+        statusEl.textContent = `🤝 Multi-acheteurs (${contribs.length})`;
+        statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-sky-600 text-white";
+      } else if (isTaken) {
+        statusEl.textContent = "✅ Réservé";
         statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-600 text-white";
       } else {
-        statusEl.textContent = isPrivateList ? "💡 Idée" : "✨ Disponible";
+        statusEl.textContent = "✨ Disponible";
         statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-slate-100 text-slate-800";
       }
 
@@ -607,14 +692,21 @@
 
       const actionBtn = document.getElementById("photoModalActionBtn");
       if (isPrivateList) {
-        actionBtn.textContent = isReserved ? "↩️ Remettre en idée" : "✅ Marquer comme acheté";
+        actionBtn.textContent = isTaken ? "↩️ Remettre en idée" : "✅ Marquer comme acheté";
         actionBtn.className = "flex-1 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition";
         actionBtn.onclick = () => {
           closePhotoModal();
           toggleParentPurchased(gift.id);
         };
+      } else if (gift.isMultiBuyer) {
+        actionBtn.textContent = "🤝 Participer / Gérer ma part";
+        actionBtn.className = "flex-1 py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition";
+        actionBtn.onclick = () => {
+          closePhotoModal();
+          openReserveModal(gift.id);
+        };
       } else {
-        if (isReserved) {
+        if (isTaken) {
           actionBtn.textContent = "🔒 Modifier / Libérer ce choix";
           actionBtn.className = "flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition";
         } else {
@@ -645,16 +737,22 @@
       currentList = listName;
       const meta = LIST_META[listName];
 
-      // Fond de page
       document.body.classList.remove("theme-birthday", "theme-christmas", "theme-parent-private");
       document.body.classList.add(meta.themeClass);
 
-      // Titre, sous-titre et cible bouton ajout
       document.getElementById("mainTitle").textContent = meta.title;
       document.getElementById("mainSubtitle").textContent = meta.subtitle;
       document.getElementById("parentTargetListName").textContent = meta.shortLabel;
 
-      // Styles onglets publics
+      // Masquer la case multi-acheteurs sur les listes privées parents
+      const addMultiWrap = document.getElementById("addMultiBuyerWrap");
+      if (meta.isPrivate) {
+        addMultiWrap.classList.add("hidden");
+        document.getElementById("giftMultiBuyer").checked = false;
+      } else {
+        addMultiWrap.classList.remove("hidden");
+      }
+
       const tabChristmas = document.getElementById("tab-christmas");
       const tabBirthday = document.getElementById("tab-birthday");
       const countChristmas = document.getElementById("count-christmas");
@@ -676,7 +774,6 @@
         countBirthday.className = "ml-1 text-xs px-2 py-0.5 rounded-full bg-slate-200 text-slate-700";
       }
 
-      // Styles onglets privés Parents
       const tabParentChristmas = document.getElementById("tab-parent_christmas");
       const tabParentBirthday = document.getElementById("tab-parent_birthday");
       const countParentChristmas = document.getElementById("count-parent_christmas");
@@ -745,7 +842,6 @@
     // RENDU DES CARTES & COMPTEURS
     // =========================================================================
     function render() {
-      // Sécurité : si le mode parent est désactivé alors qu'on était sur une liste privée
       if (LIST_META[currentList]?.isPrivate && !isParentMode) {
         switchList("christmas");
         return;
@@ -758,34 +854,36 @@
 
       const isPrivateList = Boolean(LIST_META[currentList]?.isPrivate);
       const listGifts = gifts.filter(g => g.list === currentList);
-      const reservedCount = listGifts.filter(g => g.reservedBy && g.reservedBy.trim() !== "").length;
+      const takenCount = listGifts.filter(g => isGiftTaken(g)).length;
       const totalCount = listGifts.length;
-      const pct = totalCount === 0 ? 0 : Math.round((reservedCount / totalCount) * 100);
+      const pct = totalCount === 0 ? 0 : Math.round((takenCount / totalCount) * 100);
 
-      // Libellés des filtres adaptés selon liste publique ou liste privée parents
       document.getElementById("filter-available").textContent = isPrivateList ? "Idées" : "Disponibles";
       document.getElementById("filter-reserved").textContent = isPrivateList ? "Achetés" : "Réservés";
 
       if (isPrivateList) {
-        document.getElementById("progressText").textContent = `${reservedCount} acheté${reservedCount > 1 ? "s" : ""} sur ${totalCount} idée${totalCount > 1 ? "s" : ""}`;
+        document.getElementById("progressText").textContent = `${takenCount} acheté${takenCount > 1 ? "s" : ""} sur ${totalCount} idée${totalCount > 1 ? "s" : ""}`;
       } else {
-        document.getElementById("progressText").textContent = `${reservedCount} réservé${reservedCount > 1 ? "s" : ""} sur ${totalCount} cadeau${totalCount > 1 ? "x" : ""}`;
+        document.getElementById("progressText").textContent = `${takenCount} choisi${takenCount > 1 ? "s" : ""} sur ${totalCount} cadeau${totalCount > 1 ? "x" : ""}`;
       }
       document.getElementById("progressPercent").textContent = `${pct}%`;
       document.getElementById("progressBar").style.width = `${pct}%`;
 
       const filtered = listGifts.filter(g => {
-        const isReserved = Boolean(g.reservedBy && g.reservedBy.trim());
-        if (currentFilter === "available") return !isReserved;
-        if (currentFilter === "reserved") return isReserved;
+        const isTaken = isGiftTaken(g);
+        if (currentFilter === "available") {
+          // Les cadeaux multi-acheteurs restent disponibles même s'ils ont déjà des participants
+          return g.isMultiBuyer ? true : !isTaken;
+        }
+        if (currentFilter === "reserved") return isTaken;
         return true;
       });
 
-      // Tri : Disponibles/Idées (A -> Z) puis Réservés/Achetés (A -> Z)
+      // Tri : Disponibles/Multi ouverts (A -> Z) puis Réservés complets/Achetés (A -> Z)
       filtered.sort((a, b) => {
-        const aRes = Boolean(a.reservedBy && a.reservedBy.trim());
-        const bRes = Boolean(b.reservedBy && b.reservedBy.trim());
-        if (aRes !== bRes) return aRes - bRes;
+        const aDone = a.isMultiBuyer ? false : isGiftTaken(a);
+        const bDone = b.isMultiBuyer ? false : isGiftTaken(b);
+        if (aDone !== bDone) return aDone - bDone;
         return (a.title || "").trim().localeCompare((b.title || "").trim(), "fr", { sensitivity: "base" });
       });
 
@@ -802,38 +900,122 @@
       const placeholderEmoji = LIST_META[currentList]?.emoji || "🎁";
 
       grid.innerHTML = filtered.map(gift => {
-        const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim());
+        const isMulti = Boolean(gift.isMultiBuyer) && !isPrivateList;
+        const contribs = getContributions(gift);
+        const isTaken = isGiftTaken(gift);
+        const isSingleReserved = !isMulti && isTaken;
         const showRealName = isParentMode && !hideNames;
         const displayName = showRealName ? escapeHtml(gift.reservedBy) : "un proche 🤫";
         const hasImage = Boolean(gift.image && gift.image.trim() !== "");
 
         const placeholderGradient = isPrivateList
           ? "from-indigo-50 to-purple-100"
-          : (currentList === "christmas" ? "from-red-50 to-emerald-50" : "from-amber-50 to-orange-100");
+          : (isMulti ? "from-sky-50 to-indigo-100" : (currentList === "christmas" ? "from-red-50 to-emerald-50" : "from-amber-50 to-orange-100"));
+
+        // Calcul du total éventuel sur un cadeau multi-acheteurs
+        const totalContributed = contribs.reduce((sum, c) => sum + parseAmountValue(c.amount), 0);
+
+        // Badge haut-gauche
+        let topBadgeHtml = "";
+        if (isPrivateList) {
+          topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${isTaken ? "bg-emerald-600 text-white" : "bg-indigo-600 text-white"}">
+            ${isTaken ? "✅ Acheté" : "💡 Idée Parents"}
+          </span>`;
+        } else if (isMulti) {
+          topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm bg-sky-600 text-white">
+            🤝 Multi-acheteurs${contribs.length > 0 ? ` (${contribs.length})` : ""}
+          </span>`;
+        } else {
+          topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${isSingleReserved ? "bg-emerald-600 text-white" : "bg-white/95 text-slate-800"}">
+            ${isSingleReserved ? "✅ Réservé" : "✨ Disponible"}
+          </span>`;
+        }
+
+        // Encart réservation / participations
+        let statusBlockHtml = "";
+        if (!isPrivateList) {
+          if (isMulti) {
+            if (contribs.length > 0) {
+              if (showRealName) {
+                const lines = contribs.map(c => {
+                  const amountTxt = c.amount && c.amount.trim() ? ` — <span class="font-extrabold">${escapeHtml(c.amount.trim())}</span>` : "";
+                  const commentTxt = c.comment && c.comment.trim() ? ` <span class="italic text-sky-800">(« ${escapeHtml(c.comment.trim())} »)</span>` : "";
+                  return `<li>• <span class="font-bold">${escapeHtml(c.name)}</span>${amountTxt}${commentTxt}</li>`;
+                }).join("");
+                statusBlockHtml = `
+                  <div class="mt-4 p-3 rounded-2xl bg-sky-50 border border-sky-200 text-xs text-sky-950 space-y-1.5">
+                    <div class="flex items-center justify-between font-extrabold">
+                      <span>🤝 ${contribs.length} participant${contribs.length > 1 ? "s" : ""}</span>
+                      ${totalContributed > 0 ? `<span class="px-2 py-0.5 rounded-full bg-sky-200/80 text-sky-950">Total : ${totalContributed} €</span>` : ""}
+                    </div>
+                    <ul class="space-y-1 text-sky-900">${lines}</ul>
+                  </div>
+                `;
+              } else {
+                statusBlockHtml = `
+                  <div class="mt-4 p-3 rounded-2xl bg-sky-50 border border-sky-200 text-xs text-sky-950">
+                    <p class="font-extrabold">🤝 ${contribs.length} proche${contribs.length > 1 ? "s" : ""} participe${contribs.length > 1 ? "nt" : ""} 🤫</p>
+                    <p class="text-[11px] text-sky-800 mt-0.5">Vous pouvez aussi vous joindre à eux !</p>
+                  </div>
+                `;
+              }
+            }
+          } else if (isSingleReserved) {
+            statusBlockHtml = `
+              <div class="mt-4 p-3 rounded-2xl bg-emerald-100/70 border border-emerald-200 text-xs text-emerald-950">
+                <p class="font-extrabold">🎁 Pris par : ${displayName}</p>
+                ${gift.comment && showRealName ? `<p class="mt-1 italic text-emerald-800">« ${escapeHtml(gift.comment)} »</p>` : ""}
+              </div>
+            `;
+          }
+        }
+
+        // Bouton principal d'action
+        let mainActionHtml = "";
+        if (isPrivateList) {
+          mainActionHtml = `
+            <button onclick="toggleParentPurchased('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl ${isTaken ? "bg-white hover:bg-slate-50 border border-slate-300 text-slate-700" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"} font-extrabold text-xs sm:text-sm transition">
+              ${isTaken ? "↩️ Remettre en idée" : "✅ Marquer comme acheté"}
+            </button>
+          `;
+        } else if (isMulti) {
+          mainActionHtml = `
+            <button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition">
+              🤝 Participer${contribs.length > 0 ? " / Gérer ma part" : " à ce cadeau"}
+            </button>
+          `;
+        } else if (isSingleReserved) {
+          mainActionHtml = `
+            <button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition">
+              🔒 Modifier / Libérer ce choix
+            </button>
+          `;
+        } else {
+          mainActionHtml = `
+            <button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl ${currentList === "christmas" ? "bg-red-600 hover:bg-red-700" : "bg-amber-500 hover:bg-amber-600"} text-white font-extrabold text-xs sm:text-sm shadow-sm transition">
+              🙋‍♂️ Je le prends !
+            </button>
+          `;
+        }
 
         return `
-          <article class="card-hover bg-white rounded-3xl shadow-sm border ${isReserved ? "border-emerald-200 bg-emerald-50/30" : (isPrivateList ? "border-indigo-100" : "border-slate-100")} overflow-hidden flex flex-col justify-between">
+          <article class="card-hover bg-white rounded-3xl shadow-sm border ${isSingleReserved ? "border-emerald-200 bg-emerald-50/30" : (isMulti ? "border-sky-200" : (isPrivateList ? "border-indigo-100" : "border-slate-100"))} overflow-hidden flex flex-col justify-between">
             <div>
               <div ${hasImage ? `onclick="openPhotoModal('${gift.id}')"` : ""} class="relative h-44 bg-slate-100 flex items-center justify-center overflow-hidden ${hasImage ? "cursor-zoom-in group" : ""}">
                 ${hasImage
-                  ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isReserved ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                  ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isSingleReserved ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
                      <div class="hidden w-full h-full items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">${placeholderEmoji}</div>
                      <span class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-black/60 text-white backdrop-blur-sm">🔍 Agrandir</span>`
                   : `<div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br ${placeholderGradient}">${placeholderEmoji}</div>`
                 }
 
-                <span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${isReserved ? "bg-emerald-600 text-white" : (isPrivateList ? "bg-indigo-600 text-white" : "bg-white/95 text-slate-800")}">
-                  ${isPrivateList
-                    ? (isReserved ? "✅ Acheté" : "💡 Idée Parents")
-                    : (isReserved ? "✅ Réservé" : "✨ Disponible")
-                  }
-                </span>
+                ${topBadgeHtml}
 
                 ${gift.price ? `<span class="absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-extrabold bg-slate-900/80 text-white backdrop-blur-sm">${escapeHtml(gift.price)}</span>` : ""}
               </div>
 
               <div class="p-5">
-                <h3 class="font-extrabold text-lg text-slate-900 leading-snug ${isReserved ? "line-through decoration-emerald-500/60 text-slate-600" : ""}">
+                <h3 class="font-extrabold text-lg text-slate-900 leading-snug ${isSingleReserved ? "line-through decoration-emerald-500/60 text-slate-600" : ""}">
                   ${escapeHtml(gift.title)}
                 </h3>
 
@@ -845,29 +1027,12 @@
                   </a>
                 ` : ""}
 
-                ${(!isPrivateList && isReserved) ? `
-                  <div class="mt-4 p-3 rounded-2xl bg-emerald-100/70 border border-emerald-200 text-xs text-emerald-950">
-                    <p class="font-extrabold">🎁 Pris par : ${displayName}</p>
-                    ${gift.comment && showRealName ? `<p class="mt-1 italic text-emerald-800">« ${escapeHtml(gift.comment)} »</p>` : ""}
-                  </div>
-                ` : ""}
+                ${statusBlockHtml}
               </div>
             </div>
 
             <div class="px-5 pb-5 pt-2 flex flex-col gap-2">
-              ${isPrivateList
-                ? `<button onclick="toggleParentPurchased('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl ${isReserved ? "bg-white hover:bg-slate-50 border border-slate-300 text-slate-700" : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"} font-extrabold text-xs sm:text-sm transition">
-                     ${isReserved ? "↩️ Remettre en idée" : "✅ Marquer comme acheté"}
-                   </button>`
-                : (isReserved
-                    ? `<button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition">
-                         🔒 Modifier / Libérer ce choix
-                       </button>`
-                    : `<button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl ${currentList === "christmas" ? "bg-red-600 hover:bg-red-700" : "bg-amber-500 hover:bg-amber-600"} text-white font-extrabold text-xs sm:text-sm shadow-sm transition">
-                         🙋‍♂️ Je le prends !
-                       </button>`
-                  )
-              }
+              ${mainActionHtml}
 
               ${isParentMode ? `
                 <div class="flex gap-2 pt-1 border-t border-slate-100">
@@ -893,7 +1058,7 @@
       const gift = gifts.find(g => g.id === giftId);
       if (!gift) return;
 
-      const isCurrentlyPurchased = Boolean(gift.reservedBy && gift.reservedBy.trim() !== "");
+      const isCurrentlyPurchased = isGiftTaken(gift);
       const payload = {
         reservedBy: isCurrentlyPurchased ? "" : "Parents",
         reservedPinHash: "",
@@ -912,24 +1077,116 @@
     };
 
     // =========================================================================
-    // RÉSERVATION / MODIFICATION PAR LA FAMILLE (AVEC CODE PIN À 4 CHIFFRES)
+    // RÉSERVATION / PARTICIPATION MULTI-ACHETEURS (AVEC CODE PIN À 4 CHIFFRES)
     // =========================================================================
-    function isPinAuthorizedForGift(gift, enteredPin) {
+    function isPinAuthorized(storedPinHash, enteredPin) {
       if (isParentMode) return true;
-      if (!gift.reservedPinHash) return true;
+      if (!storedPinHash) return true;
       const cleanPin = (enteredPin || "").trim();
       if (!cleanPin) return false;
       const hash = sha256Pure(cleanPin);
-      return hash === gift.reservedPinHash || hash === PARENT_PIN_HASH;
+      return hash === storedPinHash || hash === PARENT_PIN_HASH;
     }
+
+    function renderMultiParticipantsInModal(gift) {
+      const contribs = getContributions(gift);
+      const section = document.getElementById("multiParticipantsSection");
+      const listEl = document.getElementById("multiParticipantsList");
+      const headerEl = document.getElementById("multiParticipantsHeader");
+
+      if (!gift.isMultiBuyer || contribs.length === 0) {
+        section.classList.add("hidden");
+        return;
+      }
+
+      section.classList.remove("hidden");
+      headerEl.textContent = `🤝 Participants (${contribs.length})`;
+      const showRealName = isParentMode && !hideNames;
+
+      listEl.innerHTML = contribs.map((c, index) => {
+        const label = showRealName
+          ? `${escapeHtml(c.name)}${c.amount ? ` (${escapeHtml(c.amount)})` : ""}`
+          : `Participant #${index + 1} 🤫`;
+        return `
+          <div class="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-sky-100 text-xs">
+            <span class="font-bold text-slate-800 truncate">${label}</span>
+            <button type="button" onclick="selectContributionToEdit('${gift.id}', '${c.id}')" class="shrink-0 px-2.5 py-1 rounded-lg bg-sky-100 hover:bg-sky-200 text-sky-900 font-extrabold text-[11px] transition">
+              🔒 Modifier / Retirer
+            </button>
+          </div>
+        `;
+      }).join("");
+    }
+
+    window.selectContributionToEdit = function(giftId, contribId) {
+      const gift = gifts.find(g => g.id === giftId);
+      if (!gift) return;
+      const contribs = getContributions(gift);
+      const contrib = contribs.find(c => c.id === contribId);
+      if (!contrib) return;
+
+      const savedPin = localStorage.getItem("family_member_pin") || "";
+
+      document.getElementById("modalContributionId").value = contrib.id;
+      document.getElementById("reserverPinError").classList.add("hidden");
+      document.getElementById("newParticipantBtn").classList.remove("hidden");
+
+      document.getElementById("reserverName").value = (isParentMode && !hideNames) ? contrib.name : "";
+      document.getElementById("reserverAmount").value = (isParentMode && !hideNames) ? (contrib.amount || "") : "";
+      document.getElementById("reserverComment").value = (isParentMode && !hideNames) ? (contrib.comment || "") : "";
+
+      const pinInput = document.getElementById("reserverPin");
+      const pinLabel = document.getElementById("reserverPinLabel");
+      const pinHelp = document.getElementById("reserverPinHelp");
+
+      if (savedPin && contrib.pinHash && sha256Pure(savedPin) === contrib.pinHash) {
+        pinInput.value = savedPin;
+      } else {
+        pinInput.value = "";
+      }
+
+      if (isParentMode) {
+        pinInput.required = false;
+        pinLabel.textContent = "Code secret à 4 chiffres (non requis en Mode Parents)";
+        pinHelp.textContent = "En tant que parent, vous pouvez modifier ou retirer cette participation.";
+      } else {
+        pinInput.required = Boolean(contrib.pinHash);
+        pinLabel.textContent = "Votre code secret à 4 chiffres *";
+        pinHelp.textContent = "Saisissez le code à 4 chiffres choisi lors de votre participation.";
+      }
+
+      document.getElementById("submitReservationBtn").textContent = "✅ Mettre à jour ma part";
+      const cancelBtn = document.getElementById("cancelReservationBtn");
+      cancelBtn.textContent = "🗑️ Retirer ma part";
+      cancelBtn.classList.remove("hidden");
+    };
+
+    window.resetMultiFormToAdd = function() {
+      const savedUser = localStorage.getItem("family_member_name") || "";
+      const savedPin = localStorage.getItem("family_member_pin") || "";
+
+      document.getElementById("modalContributionId").value = "";
+      document.getElementById("reserverPinError").classList.add("hidden");
+      document.getElementById("newParticipantBtn").classList.add("hidden");
+
+      document.getElementById("reserverName").value = savedUser;
+      document.getElementById("reserverPin").value = savedPin;
+      document.getElementById("reserverPin").required = true;
+      document.getElementById("reserverPinLabel").textContent = "Choisissez un code secret à 4 chiffres *";
+      document.getElementById("reserverPinHelp").textContent = "Retenez ces 4 chiffres : ils vous permettront de modifier ou retirer votre part.";
+      document.getElementById("reserverAmount").value = "";
+      document.getElementById("reserverComment").value = "";
+
+      document.getElementById("submitReservationBtn").textContent = "🤝 Valider ma participation";
+      document.getElementById("cancelReservationBtn").classList.add("hidden");
+    };
 
     window.openReserveModal = function(giftId) {
       const gift = gifts.find(g => g.id === giftId);
       if (!gift) return;
 
-      const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim() !== "");
-
       document.getElementById("modalGiftId").value = gift.id;
+      document.getElementById("modalContributionId").value = "";
       document.getElementById("modalGiftTitle").textContent = gift.title;
       document.getElementById("reserverPinError").classList.add("hidden");
 
@@ -940,43 +1197,66 @@
       const pinInput = document.getElementById("reserverPin");
       const pinLabel = document.getElementById("reserverPinLabel");
       const pinHelp = document.getElementById("reserverPinHelp");
+      const amountWrap = document.getElementById("reserverAmountWrap");
       const badgeEl = document.getElementById("reserveModalBadge");
       const submitBtn = document.getElementById("submitReservationBtn");
       const cancelBtn = document.getElementById("cancelReservationBtn");
 
-      if (isReserved) {
-        badgeEl.textContent = "Modifier / Libérer la réservation";
-        nameInput.value = (isParentMode && !hideNames) ? gift.reservedBy : (savedUser || "");
-        document.getElementById("reserverComment").value = (isParentMode && !hideNames) ? (gift.comment || "") : "";
+      if (gift.isMultiBuyer) {
+        badgeEl.textContent = "🤝 Cadeau multi-acheteurs";
+        amountWrap.classList.remove("hidden");
+        renderMultiParticipantsInModal(gift);
+        resetMultiFormToAdd();
 
-        if (savedPin && gift.reservedPinHash && sha256Pure(savedPin) === gift.reservedPinHash) {
-          pinInput.value = savedPin;
-        } else {
-          pinInput.value = "";
+        // Si le téléphone actuel correspond déjà à un participant enregistré, on pré-sélectionne sa part
+        const contribs = getContributions(gift);
+        if (savedPin) {
+          const myContrib = contribs.find(c => c.pinHash && sha256Pure(savedPin) === c.pinHash);
+          if (myContrib) {
+            selectContributionToEdit(gift.id, myContrib.id);
+          }
         }
-
-        if (isParentMode) {
-          pinInput.required = false;
-          pinLabel.textContent = "Code secret à 4 chiffres (non requis en Mode Parents)";
-          pinHelp.textContent = "En tant que parent, vous pouvez modifier ou libérer ce cadeau directement.";
-        } else {
-          pinInput.required = Boolean(gift.reservedPinHash);
-          pinLabel.textContent = "Votre code secret à 4 chiffres *";
-          pinHelp.textContent = "Saisissez le code à 4 chiffres choisi lors de la réservation.";
-        }
-
-        submitBtn.textContent = "✅ Enregistrer la modification";
-        cancelBtn.classList.remove("hidden");
       } else {
-        badgeEl.textContent = "Réservation cadeau";
-        nameInput.value = savedUser;
-        pinInput.value = savedPin;
-        pinInput.required = true;
-        pinLabel.textContent = "Choisissez un code secret à 4 chiffres *";
-        pinHelp.textContent = "Retenez ces 4 chiffres : ils vous permettront de modifier ou libérer ce cadeau.";
-        document.getElementById("reserverComment").value = "";
-        submitBtn.textContent = "✅ Valider mon choix";
-        cancelBtn.classList.add("hidden");
+        amountWrap.classList.add("hidden");
+        document.getElementById("multiParticipantsSection").classList.add("hidden");
+        document.getElementById("newParticipantBtn").classList.add("hidden");
+
+        const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim() !== "");
+        if (isReserved) {
+          badgeEl.textContent = "Modifier / Libérer la réservation";
+          nameInput.value = (isParentMode && !hideNames) ? gift.reservedBy : (savedUser || "");
+          document.getElementById("reserverComment").value = (isParentMode && !hideNames) ? (gift.comment || "") : "";
+
+          if (savedPin && gift.reservedPinHash && sha256Pure(savedPin) === gift.reservedPinHash) {
+            pinInput.value = savedPin;
+          } else {
+            pinInput.value = "";
+          }
+
+          if (isParentMode) {
+            pinInput.required = false;
+            pinLabel.textContent = "Code secret à 4 chiffres (non requis en Mode Parents)";
+            pinHelp.textContent = "En tant que parent, vous pouvez modifier ou libérer ce cadeau directement.";
+          } else {
+            pinInput.required = Boolean(gift.reservedPinHash);
+            pinLabel.textContent = "Votre code secret à 4 chiffres *";
+            pinHelp.textContent = "Saisissez le code à 4 chiffres choisi lors de la réservation.";
+          }
+
+          submitBtn.textContent = "✅ Enregistrer la modification";
+          cancelBtn.textContent = "🗑️ Libérer ce cadeau";
+          cancelBtn.classList.remove("hidden");
+        } else {
+          badgeEl.textContent = "Réservation cadeau";
+          nameInput.value = savedUser;
+          pinInput.value = savedPin;
+          pinInput.required = true;
+          pinLabel.textContent = "Choisissez un code secret à 4 chiffres *";
+          pinHelp.textContent = "Retenez ces 4 chiffres : ils vous permettront de modifier ou libérer ce cadeau.";
+          document.getElementById("reserverComment").value = "";
+          submitBtn.textContent = "✅ Valider mon choix";
+          cancelBtn.classList.add("hidden");
+        }
       }
 
       document.getElementById("reserveModal").classList.remove("hidden");
@@ -990,18 +1270,82 @@
     window.submitReservation = async function(e) {
       e.preventDefault();
       const id = document.getElementById("modalGiftId").value;
+      const contribId = document.getElementById("modalContributionId").value;
       const gift = gifts.find(g => g.id === id);
       if (!gift) return;
 
       const name = document.getElementById("reserverName").value.trim();
       const pin = document.getElementById("reserverPin").value.trim();
+      const amount = document.getElementById("reserverAmount").value.trim();
       const comment = document.getElementById("reserverComment").value.trim();
       if (!name) return;
 
+      if (gift.isMultiBuyer) {
+        const contribs = [...getContributions(gift)];
+
+        if (contribId) {
+          // Modification d'une participation existante
+          const idx = contribs.findIndex(c => c.id === contribId);
+          if (idx === -1) return;
+          const existing = contribs[idx];
+
+          if (!isPinAuthorized(existing.pinHash, pin)) {
+            document.getElementById("reserverPinError").classList.remove("hidden");
+            return;
+          }
+
+          contribs[idx] = {
+            ...existing,
+            name,
+            amount,
+            comment,
+            pinHash: existing.pinHash || (/^\d{4}$/.test(pin) ? sha256Pure(pin) : "")
+          };
+        } else {
+          // Nouvelle participation
+          if (!/^\d{4}$/.test(pin)) {
+            alert("Merci de saisir un code secret composé exactement de 4 chiffres.");
+            return;
+          }
+          contribs.push({
+            id: "c-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
+            name,
+            pinHash: sha256Pure(pin),
+            amount,
+            comment
+          });
+        }
+
+        if (!isParentMode) {
+          localStorage.setItem("family_member_name", name);
+          if (/^\d{4}$/.test(pin)) localStorage.setItem("family_member_pin", pin);
+        }
+
+        const payload = {
+          contributions: contribs,
+          reservedBy: contribs.length > 0 ? `${contribs.length} participant(s)` : "",
+          reservedPinHash: "",
+          comment: ""
+        };
+
+        if (useFirebase) {
+          await updateDoc(doc(db, "gifts", id), payload);
+        } else {
+          const gIdx = gifts.findIndex(g => g.id === id);
+          if (gIdx !== -1) {
+            gifts[gIdx] = { ...gifts[gIdx], ...payload };
+            saveLocal();
+          }
+        }
+        closeReserveModal();
+        return;
+      }
+
+      // Mode réservation simple (1 seul acheteur)
       const isReserved = Boolean(gift.reservedBy && gift.reservedBy.trim() !== "");
 
       if (isReserved) {
-        if (!isPinAuthorizedForGift(gift, pin)) {
+        if (!isPinAuthorized(gift.reservedPinHash, pin)) {
           document.getElementById("reserverPinError").classList.remove("hidden");
           return;
         }
@@ -1043,12 +1387,45 @@
 
     window.releaseGift = async function() {
       const id = document.getElementById("modalGiftId").value;
+      const contribId = document.getElementById("modalContributionId").value;
       const gift = gifts.find(g => g.id === id);
       if (!gift) return;
 
       const pin = document.getElementById("reserverPin").value.trim();
 
-      if (!isPinAuthorizedForGift(gift, pin)) {
+      if (gift.isMultiBuyer && contribId) {
+        const contribs = [...getContributions(gift)];
+        const existing = contribs.find(c => c.id === contribId);
+        if (!existing) return;
+
+        if (!isPinAuthorized(existing.pinHash, pin)) {
+          document.getElementById("reserverPinError").classList.remove("hidden");
+          return;
+        }
+
+        const updatedContribs = contribs.filter(c => c.id !== contribId);
+        const payload = {
+          contributions: updatedContribs,
+          reservedBy: updatedContribs.length > 0 ? `${updatedContribs.length} participant(s)` : "",
+          reservedPinHash: "",
+          comment: ""
+        };
+
+        if (useFirebase) {
+          await updateDoc(doc(db, "gifts", id), payload);
+        } else {
+          const gIdx = gifts.findIndex(g => g.id === id);
+          if (gIdx !== -1) {
+            gifts[gIdx] = { ...gifts[gIdx], ...payload };
+            saveLocal();
+          }
+        }
+        closeReserveModal();
+        return;
+      }
+
+      // Libération réservation simple
+      if (!isPinAuthorized(gift.reservedPinHash, pin)) {
         document.getElementById("reserverPinError").classList.remove("hidden");
         return;
       }
@@ -1193,6 +1570,7 @@
       submitBtn.textContent = "Enregistrement...";
 
       try {
+        const isPrivate = Boolean(LIST_META[currentList]?.isPrivate);
         const newGift = {
           list: currentList,
           title: document.getElementById("giftTitle").value.trim(),
@@ -1200,6 +1578,8 @@
           url: document.getElementById("giftUrl").value.trim(),
           image: addImageDataUrl || "",
           note: document.getElementById("giftNote").value.trim(),
+          isMultiBuyer: isPrivate ? false : document.getElementById("giftMultiBuyer").checked,
+          contributions: [],
           reservedBy: "",
           reservedPinHash: "",
           comment: ""
@@ -1230,6 +1610,7 @@
       document.getElementById("editPrice").value = gift.price || "";
       document.getElementById("editUrl").value = gift.url || "";
       document.getElementById("editNote").value = gift.note || "";
+      document.getElementById("editMultiBuyer").checked = Boolean(gift.isMultiBuyer);
       document.getElementById("editImageFile").value = "";
 
       editImageDataUrl = gift.image || "";
@@ -1251,14 +1632,34 @@
     window.submitEditGift = async function(e) {
       e.preventDefault();
       const id = document.getElementById("editGiftId").value;
+      const gift = gifts.find(g => g.id === id);
+      const targetList = document.getElementById("editList").value;
+      const isPrivate = Boolean(LIST_META[targetList]?.isPrivate);
+      const nextMulti = isPrivate ? false : document.getElementById("editMultiBuyer").checked;
+
       const updates = {
         title: document.getElementById("editTitle").value.trim(),
-        list: document.getElementById("editList").value,
+        list: targetList,
         price: document.getElementById("editPrice").value.trim(),
         url: document.getElementById("editUrl").value.trim(),
         image: editImageDataUrl || "",
-        note: document.getElementById("editNote").value.trim()
+        note: document.getElementById("editNote").value.trim(),
+        isMultiBuyer: nextMulti
       };
+
+      // Si on passe un cadeau déjà réservé en multi-acheteurs, on migre sa réservation existante
+      if (gift && nextMulti && !gift.isMultiBuyer && gift.reservedBy && gift.reservedBy.trim() !== "") {
+        updates.contributions = [{
+          id: "migrated-" + Date.now(),
+          name: gift.reservedBy.trim(),
+          pinHash: gift.reservedPinHash || "",
+          amount: "",
+          comment: gift.comment || ""
+        }];
+        updates.reservedBy = "1 participant(s)";
+        updates.reservedPinHash = "";
+        updates.comment = "";
+      }
 
       if (useFirebase) {
         await updateDoc(doc(db, "gifts", id), updates);
