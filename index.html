@@ -143,7 +143,7 @@
         </div>
         <div class="sm:col-span-3">
           <label class="block text-xs font-bold text-slate-600 mb-1">Prix approx.</label>
-          <input type="text" id="giftPrice" placeholder="Ex: 35 €" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
+          <input type="text" id="giftPrice" placeholder="Ex: 200€" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-sm" />
         </div>
         <div class="sm:col-span-4">
           <label class="block text-xs font-bold text-slate-600 mb-1">Lien boutique (optionnel)</label>
@@ -174,8 +174,8 @@
           <label class="flex items-start sm:items-center gap-3 p-3 rounded-2xl bg-sky-50/80 border border-sky-200 cursor-pointer hover:bg-sky-100/70 transition">
             <input type="checkbox" id="giftMultiBuyer" class="mt-0.5 sm:mt-0 w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500" />
             <div class="text-xs sm:text-sm">
-              <span class="font-extrabold text-sky-950">🤝 Cadeau multi-acheteurs (acheter à plusieurs / cumulable)</span>
-              <p class="text-[11px] text-sky-800">Permet à plusieurs proches de participer ensemble (ex : gros cadeau commun ou cartes V-Bucks).</p>
+              <span class="font-extrabold text-sky-950">🤝 Cadeau multi-acheteurs (acheter à plusieurs / cagnotte)</span>
+              <p class="text-[11px] text-sky-800">Chaque participant indique sa somme ; dès que le prix du cadeau est atteint, les participations se clôturent automatiquement.</p>
             </div>
           </label>
         </div>
@@ -244,20 +244,38 @@
         <button onclick="closeReserveModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 font-bold">✕</button>
       </div>
 
-      <!-- LISTE DES PARTICIPANTS (MODE MULTI-ACHETEURS UNIQUEMENT) -->
-      <div id="multiParticipantsSection" class="hidden mb-4 p-3.5 rounded-2xl bg-sky-50 border border-sky-200 space-y-2">
+      <!-- LISTE DES PARTICIPANTS + BARRE DE PROGRESSION (MODE MULTI-ACHETEURS UNIQUEMENT) -->
+      <div id="multiParticipantsSection" class="hidden mb-4 p-3.5 rounded-2xl bg-sky-50 border border-sky-200 space-y-2.5">
         <div class="flex items-center justify-between">
           <span class="text-xs font-extrabold text-sky-950" id="multiParticipantsHeader">🤝 Participants actuels</span>
           <button type="button" id="newParticipantBtn" onclick="resetMultiFormToAdd()" class="hidden text-[11px] font-extrabold text-indigo-600 hover:text-indigo-800 underline">
             + Nouvelle participation
           </button>
         </div>
+
+        <!-- RÉCAPITULATIF CAGNOTTE SI UN PRIX CIBLE EXISTE -->
+        <div id="multiModalGoalWrap" class="hidden space-y-1">
+          <div class="flex justify-between text-[11px] font-extrabold text-sky-900">
+            <span id="multiModalCollectedText">0 € / 200 €</span>
+            <span id="multiModalRemainingText">Reste 200 €</span>
+          </div>
+          <div class="w-full h-2 bg-sky-200/80 rounded-full overflow-hidden">
+            <div id="multiModalGoalBar" class="h-full bg-sky-600 transition-all duration-300 rounded-full" style="width: 0%"></div>
+          </div>
+        </div>
+
         <div id="multiParticipantsList" class="space-y-1.5">
           <!-- Injecté en JS -->
         </div>
       </div>
 
-      <form onsubmit="submitReservation(event)" class="space-y-4">
+      <!-- MESSAGE SI LA CAGNOTTE EST COMPLÈTE ET QU'ON N'EST PAS EN MODE ÉDITION -->
+      <div id="multiGoalReachedBanner" class="hidden p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-1">
+        <p class="text-sm font-black text-emerald-900">🎉 Le montant total de ce cadeau est atteint !</p>
+        <p class="text-xs text-emerald-800">Si vous faites partie des participants ci-dessus, cliquez sur « Modifier / Retirer » à côté de votre ligne avec votre code à 4 chiffres.</p>
+      </div>
+
+      <form id="reserveForm" onsubmit="submitReservation(event)" class="space-y-4">
         <input type="hidden" id="modalGiftId" />
         <input type="hidden" id="modalContributionId" />
 
@@ -290,12 +308,23 @@
           </p>
         </div>
 
-        <!-- CHAMP MONTANT FACULTATIF (AFFICHÉ UNIQUEMENT POUR LES CADEAUX MULTI-ACHETEURS) -->
+        <!-- CHAMP MONTANT OBLIGATOIRE (AFFICHÉ UNIQUEMENT POUR LES CADEAUX MULTI-ACHETEURS) -->
         <div id="reserverAmountWrap" class="hidden">
-          <label class="block text-xs font-bold text-slate-700 mb-1">
-            Montant de votre participation <span class="font-normal text-slate-400">(facultatif)</span>
-          </label>
-          <input type="text" id="reserverAmount" placeholder="Ex: 20 € (laisser vide si non souhaité)" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm" />
+          <div class="flex items-center justify-between mb-1">
+            <label class="block text-xs font-bold text-slate-700">
+              Montant de votre participation (€) *
+            </label>
+            <span id="reserverRemainingBadge" class="hidden text-[11px] font-extrabold text-sky-700 bg-sky-100 px-2 py-0.5 rounded-full"></span>
+          </div>
+          <input
+            type="number"
+            id="reserverAmount"
+            min="1"
+            step="any"
+            placeholder="Ex: 50"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:border-sky-500 focus:ring-2 focus:ring-sky-200 outline-none text-sm font-bold"
+          />
+          <p id="reserverAmountError" class="hidden text-xs font-bold text-rose-600 mt-1"></p>
         </div>
 
         <!-- PETIT MESSAGE -->
@@ -358,7 +387,7 @@
           </div>
           <div>
             <label class="block text-xs font-bold text-slate-600 mb-1">Prix approx.</label>
-            <input type="text" id="editPrice" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
+            <input type="text" id="editPrice" placeholder="Ex: 200€" class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm" />
           </div>
         </div>
         <div>
@@ -491,11 +520,24 @@
     ];
 
     // =========================================================================
-    // HELPERS MULTI-ACHETEURS & STATUTS
+    // HELPERS MONTANTS, MULTI-ACHETEURS & DÉTECTION PRIX ATTEINT
     // =========================================================================
+    function formatEuro(val) {
+      const rounded = Math.round(val * 100) / 100;
+      return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(2).replace(".", ",")} €`;
+    }
+
+    function parseAmountValue(amountStr) {
+      if (amountStr === null || amountStr === undefined) return 0;
+      const cleaned = String(amountStr).replace(/\s/g, "").replace(",", ".");
+      const match = cleaned.match(/(\d+(?:\.\d+)?)/);
+      if (!match) return 0;
+      const num = parseFloat(match[1]);
+      return isNaN(num) ? 0 : num;
+    }
+
     function getContributions(gift) {
       if (Array.isArray(gift.contributions)) return gift.contributions;
-      // Compatibilité si un cadeau avait déjà une réservation classique avant d'être basculé en multi
       if (gift.isMultiBuyer && gift.reservedBy && gift.reservedBy.trim() !== "") {
         return [{
           id: "legacy-1",
@@ -508,18 +550,30 @@
       return [];
     }
 
+    function getMultiGoalStats(gift) {
+      const contribs = getContributions(gift);
+      const target = parseAmountValue(gift.price); // Ex: "200€" -> 200
+      const collected = contribs.reduce((sum, c) => sum + parseAmountValue(c.amount), 0);
+      const hasTarget = target > 0;
+      const remaining = hasTarget ? Math.max(0, Math.round((target - collected) * 100) / 100) : null;
+      const isGoalReached = hasTarget && collected >= target;
+      const percent = hasTarget ? Math.min(100, Math.round((collected / target) * 100)) : 0;
+      return {
+        contribs,
+        target,
+        collected: Math.round(collected * 100) / 100,
+        hasTarget,
+        remaining,
+        isGoalReached,
+        percent
+      };
+    }
+
     function isGiftTaken(gift) {
       if (gift.isMultiBuyer) {
         return getContributions(gift).length > 0;
       }
       return Boolean(gift.reservedBy && gift.reservedBy.trim() !== "");
-    }
-
-    function parseAmountValue(amountStr) {
-      if (!amountStr) return 0;
-      const normalized = String(amountStr).replace(",", ".").replace(/[^0-9.]/g, "");
-      const num = parseFloat(normalized);
-      return isNaN(num) ? 0 : num;
     }
 
     // =========================================================================
@@ -646,7 +700,7 @@
 
       const isPrivateList = Boolean(LIST_META[gift.list]?.isPrivate);
       const isTaken = isGiftTaken(gift);
-      const contribs = getContributions(gift);
+      const stats = getMultiGoalStats(gift);
 
       document.getElementById("photoModalImg").src = gift.image;
       document.getElementById("photoModalTitle").textContent = gift.title;
@@ -664,8 +718,13 @@
         statusEl.textContent = isTaken ? "✅ Acheté / Validé" : "💡 Idée";
         statusEl.className = `shrink-0 px-3 py-1 rounded-full text-xs font-extrabold ${isTaken ? "bg-emerald-600 text-white" : "bg-slate-100 text-slate-800"}`;
       } else if (gift.isMultiBuyer) {
-        statusEl.textContent = `🤝 Multi-acheteurs (${contribs.length})`;
-        statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-sky-600 text-white";
+        if (stats.isGoalReached) {
+          statusEl.textContent = `✅ Cagnotte complète (${formatEuro(stats.collected)})`;
+          statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-600 text-white";
+        } else {
+          statusEl.textContent = `🤝 Multi-acheteurs (${stats.contribs.length})`;
+          statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-sky-600 text-white";
+        }
       } else if (isTaken) {
         statusEl.textContent = "✅ Réservé";
         statusEl.className = "shrink-0 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-600 text-white";
@@ -699,8 +758,13 @@
           toggleParentPurchased(gift.id);
         };
       } else if (gift.isMultiBuyer) {
-        actionBtn.textContent = "🤝 Participer / Gérer ma part";
-        actionBtn.className = "flex-1 py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition";
+        if (stats.isGoalReached) {
+          actionBtn.textContent = "🔒 Complet — Gérer ma participation";
+          actionBtn.className = "flex-1 py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition";
+        } else {
+          actionBtn.textContent = "🤝 Participer / Gérer ma part";
+          actionBtn.className = "flex-1 py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition";
+        }
         actionBtn.onclick = () => {
           closePhotoModal();
           openReserveModal(gift.id);
@@ -744,7 +808,6 @@
       document.getElementById("mainSubtitle").textContent = meta.subtitle;
       document.getElementById("parentTargetListName").textContent = meta.shortLabel;
 
-      // Masquer la case multi-acheteurs sur les listes privées parents
       const addMultiWrap = document.getElementById("addMultiBuyerWrap");
       if (meta.isPrivate) {
         addMultiWrap.classList.add("hidden");
@@ -871,18 +934,22 @@
 
       const filtered = listGifts.filter(g => {
         const isTaken = isGiftTaken(g);
+        const stats = getMultiGoalStats(g);
         if (currentFilter === "available") {
-          // Les cadeaux multi-acheteurs restent disponibles même s'ils ont déjà des participants
-          return g.isMultiBuyer ? true : !isTaken;
+          if (g.isMultiBuyer) return !stats.isGoalReached;
+          return !isTaken;
         }
-        if (currentFilter === "reserved") return isTaken;
+        if (currentFilter === "reserved") {
+          if (g.isMultiBuyer) return stats.isGoalReached || isTaken;
+          return isTaken;
+        }
         return true;
       });
 
-      // Tri : Disponibles/Multi ouverts (A -> Z) puis Réservés complets/Achetés (A -> Z)
+      // Tri : Disponibles / Cagnottes ouvertes (A -> Z) puis Réservés / Cagnottes complètes (A -> Z)
       filtered.sort((a, b) => {
-        const aDone = a.isMultiBuyer ? false : isGiftTaken(a);
-        const bDone = b.isMultiBuyer ? false : isGiftTaken(b);
+        const aDone = a.isMultiBuyer ? getMultiGoalStats(a).isGoalReached : isGiftTaken(a);
+        const bDone = b.isMultiBuyer ? getMultiGoalStats(b).isGoalReached : isGiftTaken(b);
         if (aDone !== bDone) return aDone - bDone;
         return (a.title || "").trim().localeCompare((b.title || "").trim(), "fr", { sensitivity: "base" });
       });
@@ -901,9 +968,10 @@
 
       grid.innerHTML = filtered.map(gift => {
         const isMulti = Boolean(gift.isMultiBuyer) && !isPrivateList;
-        const contribs = getContributions(gift);
+        const stats = getMultiGoalStats(gift);
+        const contribs = stats.contribs;
         const isTaken = isGiftTaken(gift);
-        const isSingleReserved = !isMulti && isTaken;
+        const isCompleted = isMulti ? stats.isGoalReached : isTaken;
         const showRealName = isParentMode && !hideNames;
         const displayName = showRealName ? escapeHtml(gift.reservedBy) : "un proche 🤫";
         const hasImage = Boolean(gift.image && gift.image.trim() !== "");
@@ -912,9 +980,6 @@
           ? "from-indigo-50 to-purple-100"
           : (isMulti ? "from-sky-50 to-indigo-100" : (currentList === "christmas" ? "from-red-50 to-emerald-50" : "from-amber-50 to-orange-100"));
 
-        // Calcul du total éventuel sur un cadeau multi-acheteurs
-        const totalContributed = contribs.reduce((sum, c) => sum + parseAmountValue(c.amount), 0);
-
         // Badge haut-gauche
         let topBadgeHtml = "";
         if (isPrivateList) {
@@ -922,12 +987,18 @@
             ${isTaken ? "✅ Acheté" : "💡 Idée Parents"}
           </span>`;
         } else if (isMulti) {
-          topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm bg-sky-600 text-white">
-            🤝 Multi-acheteurs${contribs.length > 0 ? ` (${contribs.length})` : ""}
-          </span>`;
+          if (stats.isGoalReached) {
+            topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm bg-emerald-600 text-white">
+              ✅ Cagnotte complète
+            </span>`;
+          } else {
+            topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm bg-sky-600 text-white">
+              🤝 Multi-acheteurs${contribs.length > 0 ? ` (${contribs.length})` : ""}
+            </span>`;
+          }
         } else {
-          topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${isSingleReserved ? "bg-emerald-600 text-white" : "bg-white/95 text-slate-800"}">
-            ${isSingleReserved ? "✅ Réservé" : "✨ Disponible"}
+          topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${isTaken ? "bg-emerald-600 text-white" : "bg-white/95 text-slate-800"}">
+            ${isTaken ? "✅ Réservé" : "✨ Disponible"}
           </span>`;
         }
 
@@ -935,32 +1006,61 @@
         let statusBlockHtml = "";
         if (!isPrivateList) {
           if (isMulti) {
-            if (contribs.length > 0) {
-              if (showRealName) {
+            const goalBarHtml = stats.hasTarget ? `
+              <div class="space-y-1">
+                <div class="flex justify-between text-[11px] font-extrabold ${stats.isGoalReached ? "text-emerald-900" : "text-sky-950"}">
+                  <span>${formatEuro(stats.collected)} / ${formatEuro(stats.target)}</span>
+                  <span>${stats.isGoalReached ? "Objectif atteint !" : `Reste ${formatEuro(stats.remaining)}`}</span>
+                </div>
+                <div class="w-full h-2 ${stats.isGoalReached ? "bg-emerald-200" : "bg-sky-200/80"} rounded-full overflow-hidden">
+                  <div class="h-full ${stats.isGoalReached ? "bg-emerald-600" : "bg-sky-600"} transition-all duration-500 rounded-full" style="width: ${stats.percent}%"></div>
+                </div>
+              </div>
+            ` : "";
+
+            if (contribs.length > 0 || stats.hasTarget) {
+              const boxTheme = stats.isGoalReached
+                ? "bg-emerald-100/70 border-emerald-200 text-emerald-950"
+                : "bg-sky-50 border-sky-200 text-sky-950";
+
+              if (showRealName && contribs.length > 0) {
                 const lines = contribs.map(c => {
-                  const amountTxt = c.amount && c.amount.trim() ? ` — <span class="font-extrabold">${escapeHtml(c.amount.trim())}</span>` : "";
-                  const commentTxt = c.comment && c.comment.trim() ? ` <span class="italic text-sky-800">(« ${escapeHtml(c.comment.trim())} »)</span>` : "";
+                  const amountVal = parseAmountValue(c.amount);
+                  const amountTxt = amountVal > 0 ? ` — <span class="font-extrabold">${formatEuro(amountVal)}</span>` : "";
+                  const commentTxt = c.comment && c.comment.trim() ? ` <span class="italic opacity-85">(« ${escapeHtml(c.comment.trim())} »)</span>` : "";
                   return `<li>• <span class="font-bold">${escapeHtml(c.name)}</span>${amountTxt}${commentTxt}</li>`;
                 }).join("");
+
                 statusBlockHtml = `
-                  <div class="mt-4 p-3 rounded-2xl bg-sky-50 border border-sky-200 text-xs text-sky-950 space-y-1.5">
+                  <div class="mt-4 p-3 rounded-2xl border ${boxTheme} text-xs space-y-2">
+                    ${goalBarHtml}
                     <div class="flex items-center justify-between font-extrabold">
                       <span>🤝 ${contribs.length} participant${contribs.length > 1 ? "s" : ""}</span>
-                      ${totalContributed > 0 ? `<span class="px-2 py-0.5 rounded-full bg-sky-200/80 text-sky-950">Total : ${totalContributed} €</span>` : ""}
+                      ${(!stats.hasTarget && stats.collected > 0) ? `<span>Total : ${formatEuro(stats.collected)}</span>` : ""}
                     </div>
-                    <ul class="space-y-1 text-sky-900">${lines}</ul>
+                    <ul class="space-y-1">${lines}</ul>
                   </div>
                 `;
               } else {
+                const secretLine = contribs.length > 0
+                  ? `<p class="font-extrabold">🤝 ${contribs.length} proche${contribs.length > 1 ? "s" : ""} participe${contribs.length > 1 ? "nt" : ""} 🤫</p>`
+                  : `<p class="font-bold text-sky-900">💡 Cadeau à financer à plusieurs</p>`;
+                const subLine = stats.isGoalReached
+                  ? `<p class="text-[11px] text-emerald-800">Le montant du cadeau est entièrement réuni.</p>`
+                  : `<p class="text-[11px] text-sky-800">Vous pouvez ajouter votre participation !</p>`;
+
                 statusBlockHtml = `
-                  <div class="mt-4 p-3 rounded-2xl bg-sky-50 border border-sky-200 text-xs text-sky-950">
-                    <p class="font-extrabold">🤝 ${contribs.length} proche${contribs.length > 1 ? "s" : ""} participe${contribs.length > 1 ? "nt" : ""} 🤫</p>
-                    <p class="text-[11px] text-sky-800 mt-0.5">Vous pouvez aussi vous joindre à eux !</p>
+                  <div class="mt-4 p-3 rounded-2xl border ${boxTheme} text-xs space-y-2">
+                    ${goalBarHtml}
+                    <div>
+                      ${secretLine}
+                      ${subLine}
+                    </div>
                   </div>
                 `;
               }
             }
-          } else if (isSingleReserved) {
+          } else if (isTaken) {
             statusBlockHtml = `
               <div class="mt-4 p-3 rounded-2xl bg-emerald-100/70 border border-emerald-200 text-xs text-emerald-950">
                 <p class="font-extrabold">🎁 Pris par : ${displayName}</p>
@@ -979,12 +1079,20 @@
             </button>
           `;
         } else if (isMulti) {
-          mainActionHtml = `
-            <button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition">
-              🤝 Participer${contribs.length > 0 ? " / Gérer ma part" : " à ce cadeau"}
-            </button>
-          `;
-        } else if (isSingleReserved) {
+          if (stats.isGoalReached) {
+            mainActionHtml = `
+              <button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition">
+                🔒 Complet — Modifier / Retirer ma part
+              </button>
+            `;
+          } else {
+            mainActionHtml = `
+              <button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs sm:text-sm shadow-sm transition">
+                🤝 Participer${contribs.length > 0 ? " / Gérer ma part" : " à ce cadeau"}
+              </button>
+            `;
+          }
+        } else if (isTaken) {
           mainActionHtml = `
             <button onclick="openReserveModal('${gift.id}')" class="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs sm:text-sm transition">
               🔒 Modifier / Libérer ce choix
@@ -999,11 +1107,11 @@
         }
 
         return `
-          <article class="card-hover bg-white rounded-3xl shadow-sm border ${isSingleReserved ? "border-emerald-200 bg-emerald-50/30" : (isMulti ? "border-sky-200" : (isPrivateList ? "border-indigo-100" : "border-slate-100"))} overflow-hidden flex flex-col justify-between">
+          <article class="card-hover bg-white rounded-3xl shadow-sm border ${isCompleted ? "border-emerald-200 bg-emerald-50/30" : (isMulti ? "border-sky-200" : (isPrivateList ? "border-indigo-100" : "border-slate-100"))} overflow-hidden flex flex-col justify-between">
             <div>
               <div ${hasImage ? `onclick="openPhotoModal('${gift.id}')"` : ""} class="relative h-44 bg-slate-100 flex items-center justify-center overflow-hidden ${hasImage ? "cursor-zoom-in group" : ""}">
                 ${hasImage
-                  ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isSingleReserved ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                  ? `<img src="${escapeHtml(gift.image)}" alt="${escapeHtml(gift.title)}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${isCompleted ? "opacity-75" : ""}" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
                      <div class="hidden w-full h-full items-center justify-center text-5xl bg-gradient-to-br from-slate-100 to-slate-200">${placeholderEmoji}</div>
                      <span class="absolute bottom-2.5 right-2.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-black/60 text-white backdrop-blur-sm">🔍 Agrandir</span>`
                   : `<div class="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br ${placeholderGradient}">${placeholderEmoji}</div>`
@@ -1015,7 +1123,7 @@
               </div>
 
               <div class="p-5">
-                <h3 class="font-extrabold text-lg text-slate-900 leading-snug ${isSingleReserved ? "line-through decoration-emerald-500/60 text-slate-600" : ""}">
+                <h3 class="font-extrabold text-lg text-slate-900 leading-snug ${isCompleted ? "line-through decoration-emerald-500/60 text-slate-600" : ""}">
                   ${escapeHtml(gift.title)}
                 </h3>
 
@@ -1089,23 +1197,43 @@
     }
 
     function renderMultiParticipantsInModal(gift) {
-      const contribs = getContributions(gift);
+      const stats = getMultiGoalStats(gift);
+      const contribs = stats.contribs;
       const section = document.getElementById("multiParticipantsSection");
       const listEl = document.getElementById("multiParticipantsList");
       const headerEl = document.getElementById("multiParticipantsHeader");
+      const goalWrap = document.getElementById("multiModalGoalWrap");
 
-      if (!gift.isMultiBuyer || contribs.length === 0) {
+      if (!gift.isMultiBuyer || (contribs.length === 0 && !stats.hasTarget)) {
         section.classList.add("hidden");
         return;
       }
 
       section.classList.remove("hidden");
       headerEl.textContent = `🤝 Participants (${contribs.length})`;
+
+      if (stats.hasTarget) {
+        goalWrap.classList.remove("hidden");
+        document.getElementById("multiModalCollectedText").textContent = `${formatEuro(stats.collected)} / ${formatEuro(stats.target)}`;
+        document.getElementById("multiModalRemainingText").textContent = stats.isGoalReached
+          ? "Complet !"
+          : `Reste ${formatEuro(stats.remaining)}`;
+        document.getElementById("multiModalGoalBar").style.width = `${stats.percent}%`;
+      } else {
+        goalWrap.classList.add("hidden");
+      }
+
       const showRealName = isParentMode && !hideNames;
 
+      if (contribs.length === 0) {
+        listEl.innerHTML = `<p class="text-[11px] text-sky-800 italic">Soyez le premier à participer !</p>`;
+        return;
+      }
+
       listEl.innerHTML = contribs.map((c, index) => {
+        const amt = parseAmountValue(c.amount);
         const label = showRealName
-          ? `${escapeHtml(c.name)}${c.amount ? ` (${escapeHtml(c.amount)})` : ""}`
+          ? `${escapeHtml(c.name)}${amt > 0 ? ` (${formatEuro(amt)})` : ""}`
           : `Participant #${index + 1} 🤫`;
         return `
           <div class="flex items-center justify-between gap-2 bg-white px-3 py-2 rounded-xl border border-sky-100 text-xs">
@@ -1121,19 +1249,39 @@
     window.selectContributionToEdit = function(giftId, contribId) {
       const gift = gifts.find(g => g.id === giftId);
       if (!gift) return;
-      const contribs = getContributions(gift);
-      const contrib = contribs.find(c => c.id === contribId);
+      const stats = getMultiGoalStats(gift);
+      const contrib = stats.contribs.find(c => c.id === contribId);
       if (!contrib) return;
 
       const savedPin = localStorage.getItem("family_member_pin") || "";
 
+      document.getElementById("reserveForm").classList.remove("hidden");
+      document.getElementById("multiGoalReachedBanner").classList.add("hidden");
       document.getElementById("modalContributionId").value = contrib.id;
       document.getElementById("reserverPinError").classList.add("hidden");
-      document.getElementById("newParticipantBtn").classList.remove("hidden");
+      document.getElementById("reserverAmountError").classList.add("hidden");
+
+      // Afficher "+ Nouvelle participation" seulement s'il reste de la place ou si pas de plafond
+      const newBtn = document.getElementById("newParticipantBtn");
+      if (!stats.isGoalReached) {
+        newBtn.classList.remove("hidden");
+      } else {
+        newBtn.classList.add("hidden");
+      }
 
       document.getElementById("reserverName").value = (isParentMode && !hideNames) ? contrib.name : "";
-      document.getElementById("reserverAmount").value = (isParentMode && !hideNames) ? (contrib.amount || "") : "";
+      const existingAmt = parseAmountValue(contrib.amount);
+      document.getElementById("reserverAmount").value = (isParentMode && !hideNames && existingAmt > 0) ? existingAmt : "";
       document.getElementById("reserverComment").value = (isParentMode && !hideNames) ? (contrib.comment || "") : "";
+
+      const remBadge = document.getElementById("reserverRemainingBadge");
+      if (stats.hasTarget) {
+        const maxEditable = Math.round((stats.remaining + existingAmt) * 100) / 100;
+        remBadge.textContent = `Max disponible : ${formatEuro(maxEditable)}`;
+        remBadge.classList.remove("hidden");
+      } else {
+        remBadge.classList.add("hidden");
+      }
 
       const pinInput = document.getElementById("reserverPin");
       const pinLabel = document.getElementById("reserverPinLabel");
@@ -1162,12 +1310,29 @@
     };
 
     window.resetMultiFormToAdd = function() {
+      const giftId = document.getElementById("modalGiftId").value;
+      const gift = gifts.find(g => g.id === giftId);
+      const stats = gift ? getMultiGoalStats(gift) : { hasTarget: false, isGoalReached: false, remaining: 0 };
+
       const savedUser = localStorage.getItem("family_member_name") || "";
       const savedPin = localStorage.getItem("family_member_pin") || "";
 
       document.getElementById("modalContributionId").value = "";
       document.getElementById("reserverPinError").classList.add("hidden");
+      document.getElementById("reserverAmountError").classList.add("hidden");
       document.getElementById("newParticipantBtn").classList.add("hidden");
+
+      const formEl = document.getElementById("reserveForm");
+      const reachedBanner = document.getElementById("multiGoalReachedBanner");
+
+      if (stats.isGoalReached) {
+        formEl.classList.add("hidden");
+        reachedBanner.classList.remove("hidden");
+        return;
+      }
+
+      formEl.classList.remove("hidden");
+      reachedBanner.classList.add("hidden");
 
       document.getElementById("reserverName").value = savedUser;
       document.getElementById("reserverPin").value = savedPin;
@@ -1176,6 +1341,14 @@
       document.getElementById("reserverPinHelp").textContent = "Retenez ces 4 chiffres : ils vous permettront de modifier ou retirer votre part.";
       document.getElementById("reserverAmount").value = "";
       document.getElementById("reserverComment").value = "";
+
+      const remBadge = document.getElementById("reserverRemainingBadge");
+      if (stats.hasTarget) {
+        remBadge.textContent = `Reste à financer : ${formatEuro(stats.remaining)}`;
+        remBadge.classList.remove("hidden");
+      } else {
+        remBadge.classList.add("hidden");
+      }
 
       document.getElementById("submitReservationBtn").textContent = "🤝 Valider ma participation";
       document.getElementById("cancelReservationBtn").classList.add("hidden");
@@ -1189,6 +1362,7 @@
       document.getElementById("modalContributionId").value = "";
       document.getElementById("modalGiftTitle").textContent = gift.title;
       document.getElementById("reserverPinError").classList.add("hidden");
+      document.getElementById("reserverAmountError").classList.add("hidden");
 
       const savedUser = localStorage.getItem("family_member_name") || "";
       const savedPin = localStorage.getItem("family_member_pin") || "";
@@ -1198,6 +1372,7 @@
       const pinLabel = document.getElementById("reserverPinLabel");
       const pinHelp = document.getElementById("reserverPinHelp");
       const amountWrap = document.getElementById("reserverAmountWrap");
+      const amountInput = document.getElementById("reserverAmount");
       const badgeEl = document.getElementById("reserveModalBadge");
       const submitBtn = document.getElementById("submitReservationBtn");
       const cancelBtn = document.getElementById("cancelReservationBtn");
@@ -1205,10 +1380,10 @@
       if (gift.isMultiBuyer) {
         badgeEl.textContent = "🤝 Cadeau multi-acheteurs";
         amountWrap.classList.remove("hidden");
+        amountInput.required = true;
         renderMultiParticipantsInModal(gift);
         resetMultiFormToAdd();
 
-        // Si le téléphone actuel correspond déjà à un participant enregistré, on pré-sélectionne sa part
         const contribs = getContributions(gift);
         if (savedPin) {
           const myContrib = contribs.find(c => c.pinHash && sha256Pure(savedPin) === c.pinHash);
@@ -1217,7 +1392,10 @@
           }
         }
       } else {
+        document.getElementById("reserveForm").classList.remove("hidden");
+        document.getElementById("multiGoalReachedBanner").classList.add("hidden");
         amountWrap.classList.add("hidden");
+        amountInput.required = false;
         document.getElementById("multiParticipantsSection").classList.add("hidden");
         document.getElementById("newParticipantBtn").classList.add("hidden");
 
@@ -1265,6 +1443,7 @@
     window.closeReserveModal = function() {
       document.getElementById("reserveModal").classList.add("hidden");
       document.getElementById("reserverPinError").classList.add("hidden");
+      document.getElementById("reserverAmountError").classList.add("hidden");
     };
 
     window.submitReservation = async function(e) {
@@ -1276,15 +1455,24 @@
 
       const name = document.getElementById("reserverName").value.trim();
       const pin = document.getElementById("reserverPin").value.trim();
-      const amount = document.getElementById("reserverAmount").value.trim();
+      const rawAmount = document.getElementById("reserverAmount").value.trim();
       const comment = document.getElementById("reserverComment").value.trim();
       if (!name) return;
 
       if (gift.isMultiBuyer) {
-        const contribs = [...getContributions(gift)];
+        const stats = getMultiGoalStats(gift);
+        const contribs = [...stats.contribs];
+        const numericAmount = parseAmountValue(rawAmount);
+        const amountErrEl = document.getElementById("reserverAmountError");
+        amountErrEl.classList.add("hidden");
+
+        if (numericAmount <= 0) {
+          amountErrEl.textContent = "❌ Merci d'indiquer un montant valide supérieur à 0 €.";
+          amountErrEl.classList.remove("hidden");
+          return;
+        }
 
         if (contribId) {
-          // Modification d'une participation existante
           const idx = contribs.findIndex(c => c.id === contribId);
           if (idx === -1) return;
           const existing = contribs[idx];
@@ -1294,24 +1482,41 @@
             return;
           }
 
+          // Vérification dépassement éventuel du prix cible
+          if (stats.hasTarget) {
+            const otherSum = contribs.reduce((sum, c, i) => i === idx ? sum : sum + parseAmountValue(c.amount), 0);
+            const maxAllowed = Math.round((stats.target - otherSum) * 100) / 100;
+            if (numericAmount > maxAllowed + 0.001) {
+              amountErrEl.textContent = `❌ Le montant maximum restant pour atteindre ${formatEuro(stats.target)} est de ${formatEuro(maxAllowed)}.`;
+              amountErrEl.classList.remove("hidden");
+              return;
+            }
+          }
+
           contribs[idx] = {
             ...existing,
             name,
-            amount,
+            amount: formatEuro(numericAmount),
             comment,
             pinHash: existing.pinHash || (/^\d{4}$/.test(pin) ? sha256Pure(pin) : "")
           };
         } else {
-          // Nouvelle participation
           if (!/^\d{4}$/.test(pin)) {
             alert("Merci de saisir un code secret composé exactement de 4 chiffres.");
             return;
           }
+
+          if (stats.hasTarget && numericAmount > stats.remaining + 0.001) {
+            amountErrEl.textContent = `❌ Il ne reste que ${formatEuro(stats.remaining)} pour compléter ce cadeau de ${formatEuro(stats.target)}.`;
+            amountErrEl.classList.remove("hidden");
+            return;
+          }
+
           contribs.push({
             id: "c-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
             name,
             pinHash: sha256Pure(pin),
-            amount,
+            amount: formatEuro(numericAmount),
             comment
           });
         }
@@ -1424,7 +1629,6 @@
         return;
       }
 
-      // Libération réservation simple
       if (!isPinAuthorized(gift.reservedPinHash, pin)) {
         document.getElementById("reserverPinError").classList.remove("hidden");
         return;
@@ -1647,7 +1851,6 @@
         isMultiBuyer: nextMulti
       };
 
-      // Si on passe un cadeau déjà réservé en multi-acheteurs, on migre sa réservation existante
       if (gift && nextMulti && !gift.isMultiBuyer && gift.reservedBy && gift.reservedBy.trim() !== "") {
         updates.contributions = [{
           id: "migrated-" + Date.now(),
