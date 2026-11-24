@@ -279,6 +279,11 @@
         <input type="hidden" id="modalGiftId" />
         <input type="hidden" id="modalContributionId" />
 
+        <!-- BANDEAU MODE EN COURS (NOUVELLE PARTICIPATION VS MODIFICATION) -->
+        <div id="multiModeBanner" class="hidden px-3 py-2 rounded-xl bg-indigo-50 border border-indigo-200 text-xs font-extrabold text-indigo-900 flex items-center justify-between">
+          <span id="multiModeBannerText">➕ Nouvelle participation</span>
+        </div>
+
         <!-- PRÉNOM -->
         <div>
           <label class="block text-xs font-bold text-slate-700 mb-1">Votre prénom (ou surnom) *</label>
@@ -552,7 +557,7 @@
 
     function getMultiGoalStats(gift) {
       const contribs = getContributions(gift);
-      const target = parseAmountValue(gift.price); // Ex: "200€" -> 200
+      const target = parseAmountValue(gift.price);
       const collected = contribs.reduce((sum, c) => sum + parseAmountValue(c.amount), 0);
       const hasTarget = target > 0;
       const remaining = hasTarget ? Math.max(0, Math.round((target - collected) * 100) / 100) : null;
@@ -946,7 +951,6 @@
         return true;
       });
 
-      // Tri : Disponibles / Cagnottes ouvertes (A -> Z) puis Réservés / Cagnottes complètes (A -> Z)
       filtered.sort((a, b) => {
         const aDone = a.isMultiBuyer ? getMultiGoalStats(a).isGoalReached : isGiftTaken(a);
         const bDone = b.isMultiBuyer ? getMultiGoalStats(b).isGoalReached : isGiftTaken(b);
@@ -980,7 +984,6 @@
           ? "from-indigo-50 to-purple-100"
           : (isMulti ? "from-sky-50 to-indigo-100" : (currentList === "christmas" ? "from-red-50 to-emerald-50" : "from-amber-50 to-orange-100"));
 
-        // Badge haut-gauche
         let topBadgeHtml = "";
         if (isPrivateList) {
           topBadgeHtml = `<span class="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-extrabold shadow-sm ${isTaken ? "bg-emerald-600 text-white" : "bg-indigo-600 text-white"}">
@@ -1002,7 +1005,6 @@
           </span>`;
         }
 
-        // Encart réservation / participations
         let statusBlockHtml = "";
         if (!isPrivateList) {
           if (isMulti) {
@@ -1070,7 +1072,6 @@
           }
         }
 
-        // Bouton principal d'action
         let mainActionHtml = "";
         if (isPrivateList) {
           mainActionHtml = `
@@ -1250,7 +1251,8 @@
       const gift = gifts.find(g => g.id === giftId);
       if (!gift) return;
       const stats = getMultiGoalStats(gift);
-      const contrib = stats.contribs.find(c => c.id === contribId);
+      const contribIndex = stats.contribs.findIndex(c => c.id === contribId);
+      const contrib = stats.contribs[contribIndex];
       if (!contrib) return;
 
       const savedPin = localStorage.getItem("family_member_pin") || "";
@@ -1261,7 +1263,13 @@
       document.getElementById("reserverPinError").classList.add("hidden");
       document.getElementById("reserverAmountError").classList.add("hidden");
 
-      // Afficher "+ Nouvelle participation" seulement s'il reste de la place ou si pas de plafond
+      const modeBanner = document.getElementById("multiModeBanner");
+      const modeBannerText = document.getElementById("multiModeBannerText");
+      modeBanner.classList.remove("hidden");
+      modeBannerText.textContent = (isParentMode && !hideNames)
+        ? `✏️ Modification : ${contrib.name}`
+        : `✏️ Modification : Participant #${contribIndex + 1}`;
+
       const newBtn = document.getElementById("newParticipantBtn");
       if (!stats.isGoalReached) {
         newBtn.classList.remove("hidden");
@@ -1312,10 +1320,7 @@
     window.resetMultiFormToAdd = function() {
       const giftId = document.getElementById("modalGiftId").value;
       const gift = gifts.find(g => g.id === giftId);
-      const stats = gift ? getMultiGoalStats(gift) : { hasTarget: false, isGoalReached: false, remaining: 0 };
-
-      const savedUser = localStorage.getItem("family_member_name") || "";
-      const savedPin = localStorage.getItem("family_member_pin") || "";
+      const stats = gift ? getMultiGoalStats(gift) : { hasTarget: false, isGoalReached: false, remaining: 0, contribs: [] };
 
       document.getElementById("modalContributionId").value = "";
       document.getElementById("reserverPinError").classList.add("hidden");
@@ -1334,11 +1339,22 @@
       formEl.classList.remove("hidden");
       reachedBanner.classList.add("hidden");
 
-      document.getElementById("reserverName").value = savedUser;
-      document.getElementById("reserverPin").value = savedPin;
+      const modeBanner = document.getElementById("multiModeBanner");
+      const modeBannerText = document.getElementById("multiModeBannerText");
+      if (stats.contribs.length > 0) {
+        modeBanner.classList.remove("hidden");
+        modeBannerText.textContent = `➕ Ajouter un nouveau participant (#${stats.contribs.length + 1})`;
+      } else {
+        modeBanner.classList.add("hidden");
+      }
+
+      // Toujours vierge sur multi-acheteurs pour permettre d'enregistrer facilement
+      // plusieurs personnes différentes (ex: Maman puis Grand-mère) depuis le même téléphone !
+      document.getElementById("reserverName").value = "";
+      document.getElementById("reserverPin").value = "";
       document.getElementById("reserverPin").required = true;
       document.getElementById("reserverPinLabel").textContent = "Choisissez un code secret à 4 chiffres *";
-      document.getElementById("reserverPinHelp").textContent = "Retenez ces 4 chiffres : ils vous permettront de modifier ou retirer votre part.";
+      document.getElementById("reserverPinHelp").textContent = "Retenez ces 4 chiffres : ils vous permettront de modifier ou retirer cette part.";
       document.getElementById("reserverAmount").value = "";
       document.getElementById("reserverComment").value = "";
 
@@ -1382,18 +1398,12 @@
         amountWrap.classList.remove("hidden");
         amountInput.required = true;
         renderMultiParticipantsInModal(gift);
+        // Toujours ouvrir sur "Ajouter une participation" par défaut
         resetMultiFormToAdd();
-
-        const contribs = getContributions(gift);
-        if (savedPin) {
-          const myContrib = contribs.find(c => c.pinHash && sha256Pure(savedPin) === c.pinHash);
-          if (myContrib) {
-            selectContributionToEdit(gift.id, myContrib.id);
-          }
-        }
       } else {
         document.getElementById("reserveForm").classList.remove("hidden");
         document.getElementById("multiGoalReachedBanner").classList.add("hidden");
+        document.getElementById("multiModeBanner").classList.add("hidden");
         amountWrap.classList.add("hidden");
         amountInput.required = false;
         document.getElementById("multiParticipantsSection").classList.add("hidden");
@@ -1426,8 +1436,9 @@
           cancelBtn.classList.remove("hidden");
         } else {
           badgeEl.textContent = "Réservation cadeau";
-          nameInput.value = savedUser;
-          pinInput.value = savedPin;
+          // Champs vides par défaut pour faciliter la réservation pour un autre proche depuis le même téléphone
+          nameInput.value = "";
+          pinInput.value = "";
           pinInput.required = true;
           pinLabel.textContent = "Choisissez un code secret à 4 chiffres *";
           pinHelp.textContent = "Retenez ces 4 chiffres : ils vous permettront de modifier ou libérer ce cadeau.";
@@ -1482,7 +1493,6 @@
             return;
           }
 
-          // Vérification dépassement éventuel du prix cible
           if (stats.hasTarget) {
             const otherSum = contribs.reduce((sum, c, i) => i === idx ? sum : sum + parseAmountValue(c.amount), 0);
             const maxAllowed = Math.round((stats.target - otherSum) * 100) / 100;
@@ -1519,11 +1529,6 @@
             amount: formatEuro(numericAmount),
             comment
           });
-        }
-
-        if (!isParentMode) {
-          localStorage.setItem("family_member_name", name);
-          if (/^\d{4}$/.test(pin)) localStorage.setItem("family_member_pin", pin);
         }
 
         const payload = {
@@ -1564,13 +1569,6 @@
       const pinHashToSave = isReserved
         ? (gift.reservedPinHash || (/^\d{4}$/.test(pin) ? sha256Pure(pin) : ""))
         : sha256Pure(pin);
-
-      if (!isParentMode) {
-        localStorage.setItem("family_member_name", name);
-        if (/^\d{4}$/.test(pin)) {
-          localStorage.setItem("family_member_pin", pin);
-        }
-      }
 
       const payload = {
         reservedBy: name,
