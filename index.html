@@ -4,6 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Listes de Cadeaux — Anniversaire & Noël</title>
+
+  <!-- Aperçu personnalisé pour Messenger, WhatsApp, SMS -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://tchoukla98.github.io/" />
+  <meta property="og:title" content="🎁 Listes de Cadeaux — Anniversaire & Noël" />
+  <meta property="og:description" content="Choisissez un cadeau pour éviter les doublons — modifiable à tout moment !" />
+  <meta property="og:image" content="https://tchoukla98.github.io/20251115_184159.jpg" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:image" content="https://tchoukla98.github.io/20251115_184159.jpg" />
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
@@ -1348,8 +1358,6 @@
         modeBanner.classList.add("hidden");
       }
 
-      // Toujours vierge sur multi-acheteurs pour permettre d'enregistrer facilement
-      // plusieurs personnes différentes (ex: Maman puis Grand-mère) depuis le même téléphone !
       document.getElementById("reserverName").value = "";
       document.getElementById("reserverPin").value = "";
       document.getElementById("reserverPin").required = true;
@@ -1398,7 +1406,6 @@
         amountWrap.classList.remove("hidden");
         amountInput.required = true;
         renderMultiParticipantsInModal(gift);
-        // Toujours ouvrir sur "Ajouter une participation" par défaut
         resetMultiFormToAdd();
       } else {
         document.getElementById("reserveForm").classList.remove("hidden");
@@ -1436,7 +1443,6 @@
           cancelBtn.classList.remove("hidden");
         } else {
           badgeEl.textContent = "Réservation cadeau";
-          // Champs vides par défaut pour faciliter la réservation pour un autre proche depuis le même téléphone
           nameInput.value = "";
           pinInput.value = "";
           pinInput.required = true;
